@@ -1,0 +1,125 @@
+# ==========================================
+# 1. MINIO BRIDGE
+# ==========================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio
+  namespace: default
+spec:
+  ports:
+    - port: 9000
+      targetPort: 9000
+---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: minio-custom
+  namespace: default
+  labels:
+    kubernetes.io/service-name: minio
+addressType: IPv4
+ports:
+  - port: 9000
+    protocol: TCP
+endpoints:
+  - addresses:
+      - ${MINIO_IP}
+---
+# ==========================================
+# 2. REGISTRY BRIDGE
+# ==========================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: registry
+  namespace: default
+spec:
+  ports:
+    - port: 8443
+      targetPort: 8443
+---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: registry-custom
+  namespace: default
+  labels:
+    kubernetes.io/service-name: registry
+addressType: IPv4
+ports:
+  - port: 8443
+    protocol: TCP
+endpoints:
+  - addresses:
+      - ${REGISTRY_IP}
+---
+# ==========================================
+# 3. STORAGE CLASSES
+# ==========================================
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-path
+provisioner: rancher.io/local-path
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Delete
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nfs-rwx
+provisioner: rancher.io/local-path
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Delete
+---
+# ==========================================
+# 4. NODE REGISTRY PATCHER
+# ==========================================
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: containerd-registry-configurator
+  namespace: kube-system
+  labels:
+    app: containerd-configurator
+spec:
+  selector:
+    matchLabels:
+      app: containerd-configurator
+  template:
+    metadata:
+      labels:
+        app: containerd-configurator
+    spec:
+      hostNetwork: true
+      tolerations:
+        - operator: Exists
+      containers:
+        - name: configurator
+          image: alpine:latest
+          securityContext:
+            privileged: true
+          command: [ "/bin/sh", "-c" ]
+          args:
+            - |
+              mkdir -p /host/etc/containerd/certs.d/registry:8443
+              cat <<EOF > /host/etc/containerd/certs.d/registry:8443/hosts.toml
+              server = "https://${REGISTRY_IP}:8443"
+
+              [host."https://${REGISTRY_IP}:8443"]
+                capabilities = ["pull", "resolve"]
+                skip_verify = true
+              EOF
+
+              sed -i '/registry/d' /host/etc/hosts
+              echo "${REGISTRY_IP} registry" >> /host/etc/hosts
+
+              sleep infinity
+          volumeMounts:
+            - name: host-etc
+              mountPath: /host/etc
+      volumes:
+        - name: host-etc
+          hostPath:
+            path: /etc
