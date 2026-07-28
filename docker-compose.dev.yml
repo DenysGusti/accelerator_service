@@ -154,25 +154,6 @@ services:
       redis:
         condition: service_started
 
-  xet-janitor:
-    build:
-      context: "${PROJECT_FOLDER:?err}"
-      dockerfile: dockerfiles/Dockerfile.devc
-    volumes:
-      - "${PROJECT_FOLDER:?err}:/app/"
-    env_file:
-      - ./.env.web.be
-    stdin_open: true
-    command: celery -A xet_janitor.celery_app worker --loglevel=info -Q janitor_queue -B
-    tty: true
-    depends_on:
-      db:
-        condition: service_healthy
-      minio:
-        condition: service_started
-      redis:
-        condition: service_started
-
   registry:
     image: registry:2
     ports:
