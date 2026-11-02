@@ -214,7 +214,7 @@ If so, set the name of your space/project followed by a slash as value.
    When jobs require project space access (`/mnt/wdrv`), the `hf.csi.accelerator` driver dynamically mounts project buckets into worker pods using `hf-mount`.
    - Apply the CSI driver and local DaemonSet:
      ```bash
-     kubectl apply -f ../hf-csi-driver/deploy/kubernetes/crd.yaml -f ../hf-csi-driver/deploy/kubernetes/csidriver.yaml -f ../hf-csi-driver/deploy/kubernetes/serviceaccount.yaml -f ../hf-csi-driver/deploy/kubernetes/rbac.yaml -f k8s/manifests/hf-csi-node.yaml
+     kubectl apply -f ../hf-csi-driver/deploy/kubernetes/crd.yaml -f ../hf-csi-driver/deploy/kubernetes/serviceaccount.yaml -f ../hf-csi-driver/deploy/kubernetes/rbac.yaml -f k8s/manifests/hf-csi-node.yaml
      ```
    - (Optional - Local Build): If developing or modifying `hf-csi-driver` code locally instead of using published images:
      1. Build the image locally from source:
