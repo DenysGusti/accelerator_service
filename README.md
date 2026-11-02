@@ -220,22 +220,25 @@ If so, set the name of your space/project followed by a slash as value.
      ```bash
      kubectl apply -f ../hf-csi-driver/deploy/kubernetes/crd.yaml -f ../hf-csi-driver/deploy/kubernetes/serviceaccount.yaml -f ../hf-csi-driver/deploy/kubernetes/rbac.yaml -f k8s/manifests/hf-csi-node.yaml
      ```
-   - (Optional - Local Build): If developing or modifying `hf-csi-driver` or `hf-mount` code locally instead of using published images:
+   - (Optional - Local Build): If developing or modifying `hf-csi-driver`, `hf-mount`, or `wkube_job_agent` code locally instead of using published images:
      1. Build the images locally from source:
         ```bash
         docker build -t ghcr.io/wrufesh/hf-csi-driver:v0.9.2-acc-p11 ../hf-csi-driver
         docker build -t ghcr.io/wrufesh/hf-mount-fuse:v0.6.5-acc-pr140-p14 ../hf-mount
+        docker build -t registry.iiasa.ac.at/accelerator/wkube-agent-puller:latest ../wkube_job_agent
         ```
      2. Import the images into your local cluster node (`desktop-control-plane`):
         ```bash
         # Linux / macOS / Git Bash:
         docker save ghcr.io/wrufesh/hf-csi-driver:v0.9.2-acc-p11 | docker exec -i desktop-control-plane ctr -n k8s.io images import -
         docker save ghcr.io/wrufesh/hf-mount-fuse:v0.6.5-acc-pr140-p14 | docker exec -i desktop-control-plane ctr -n k8s.io images import -
+        docker save registry.iiasa.ac.at/accelerator/wkube-agent-puller:latest | docker exec -i desktop-control-plane ctr -n k8s.io images import -
         ```
         ```powershell
         # Windows PowerShell (avoiding binary pipeline corruption):
         cmd.exe /c "docker save ghcr.io/wrufesh/hf-csi-driver:v0.9.2-acc-p11 | docker exec -i desktop-control-plane ctr -n k8s.io images import -"
         cmd.exe /c "docker save ghcr.io/wrufesh/hf-mount-fuse:v0.6.5-acc-pr140-p14 | docker exec -i desktop-control-plane ctr -n k8s.io images import -"
+        cmd.exe /c "docker save registry.iiasa.ac.at/accelerator/wkube-agent-puller:latest | docker exec -i desktop-control-plane ctr -n k8s.io images import -"
         ```
      3. Restart the DaemonSet:
         ```bash
