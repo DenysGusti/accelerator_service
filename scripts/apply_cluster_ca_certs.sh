@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CERTS_DIR="${SCRIPT_DIR}/../certs"
 
 if [ "$#" -eq 0 ]; then
-    NAMESPACES=("wkube")
+    NAMESPACES=("wkube" "kube-system")
 else
     NAMESPACES=("$@")
 fi

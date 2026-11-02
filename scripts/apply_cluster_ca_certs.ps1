@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param (
-    [string[]]$Namespaces = @("wkube")
+    [string[]]$Namespaces = @("wkube", "kube-system")
 )
 
 $ErrorActionPreference = "Stop"
