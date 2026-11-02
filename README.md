@@ -219,44 +219,32 @@ If so, set the name of your space/project followed by a slash as value.
    ```
 7. Run the Accelerator CSI Driver locally (for `/mnt/wdrv` support):
    When jobs require project space access (`/mnt/wdrv`), the `hf.csi.accelerator` driver dynamically mounts project buckets into worker pods using `hf-mount`.
-   - Apply the CSI driver manifests to the cluster:
+   - Apply the CSI driver driver and RBAC manifests, and the local Accelerator DaemonSet:
      ```bash
      kubectl apply -f ../hf-csi-driver/deploy/kubernetes/crd.yaml
      kubectl apply -f ../hf-csi-driver/deploy/kubernetes/csidriver.yaml
      kubectl apply -f ../hf-csi-driver/deploy/kubernetes/serviceaccount.yaml
      kubectl apply -f ../hf-csi-driver/deploy/kubernetes/rbac.yaml
-     kubectl apply -f ../hf-csi-driver/deploy/kubernetes/daemonset.yaml
+     kubectl apply -f k8s/manifests/hf-csi-node.yaml
      ```
-   - Ensure the driver image with CA injection support is present in the cluster:
-     - **Option A (Published Image — Recommended for new developers):**
-       If using the official published image, simply ensure the DaemonSet uses the latest tag:
-       ```bash
-       kubectl set image daemonset/hf-csi-node -n kube-system hf-csi-plugin=ghcr.io/wrufesh/hf-csi-driver:v0.9.2-acc-p11
-       ```
-     - **Option B (Local Build — When developing or modifying `hf-csi-driver` code locally):**
-       1. Build the image locally from source:
-          ```bash
-          docker build -t ghcr.io/wrufesh/hf-csi-driver:v0.9.2-acc-p11 ../hf-csi-driver
-          ```
-       2. Import the image into your local cluster node (`desktop-control-plane`):
-          ```bash
-          # Linux / macOS / Git Bash:
-          docker save ghcr.io/wrufesh/hf-csi-driver:v0.9.2-acc-p11 | docker exec -i desktop-control-plane ctr -n k8s.io images import -
-          ```
-          ```powershell
-          # Windows PowerShell (avoiding binary pipeline corruption):
-          cmd.exe /c "docker save ghcr.io/wrufesh/hf-csi-driver:v0.9.2-acc-p11 | docker exec -i desktop-control-plane ctr -n k8s.io images import -"
-          ```
-   - Configure the CSI Driver endpoint to reach the local backend (`https://host.docker.internal:8000`) and restart the DaemonSet:
-     ```bash
-     kubectl set env daemonset/hf-csi-node -n kube-system -c hf-csi-plugin ACC_ENDPOINT="https://host.docker.internal:8000" ACC_CAS_ENDPOINT="https://host.docker.internal:8000/api/xet-cas"
-     kubectl rollout restart daemonset/hf-csi-node -n kube-system
-     ```
-   - (Optional) If using the admission webhook deployment, configure its endpoint and restart:
-     ```bash
-     kubectl set env deployment/hf-csi-driver-webhook -n kube-system -c webhook ACC_ENDPOINT="https://host.docker.internal:8000" ACC_CAS_ENDPOINT="https://host.docker.internal:8000/api/xet-cas"
-     kubectl rollout restart deployment/hf-csi-driver-webhook -n kube-system
-     ```
+   - (Optional - Local Build): If developing or modifying `hf-csi-driver` code locally instead of using published images:
+     1. Build the image locally from source:
+        ```bash
+        docker build -t ghcr.io/wrufesh/hf-csi-driver:v0.9.2-acc-p11 ../hf-csi-driver
+        ```
+     2. Import the image into your local cluster node (`desktop-control-plane`):
+        ```bash
+        # Linux / macOS / Git Bash:
+        docker save ghcr.io/wrufesh/hf-csi-driver:v0.9.2-acc-p11 | docker exec -i desktop-control-plane ctr -n k8s.io images import -
+        ```
+        ```powershell
+        # Windows PowerShell (avoiding binary pipeline corruption):
+        cmd.exe /c "docker save ghcr.io/wrufesh/hf-csi-driver:v0.9.2-acc-p11 | docker exec -i desktop-control-plane ctr -n k8s.io images import -"
+        ```
+     3. Restart the DaemonSet:
+        ```bash
+        kubectl rollout restart daemonset/hf-csi-node -n kube-system
+        ```
 
 ### [TiTiler](https://developmentseed.org/titiler/) (tile server)
 
