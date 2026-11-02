@@ -14,19 +14,6 @@ if (-not (Test-Path $devCa)) {
     exit 1
 }
 
-# Ensure Kind cluster node is connected to the Docker Compose network (for minio/backend resolution)
-try {
-    $node = "desktop-control-plane"
-    $net = "accelerator_service_default"
-    $nodeInspect = docker inspect $node 2>$null | ConvertFrom-Json
-    if ($nodeInspect -and (-not $nodeInspect[0].NetworkSettings.Networks.$net)) {
-        Write-Host "Connecting cluster node $node to Docker network $net..." -ForegroundColor Cyan
-        docker network connect $net $node 2>$null
-    }
-} catch {
-    # Non-fatal if running outside local docker/kind
-}
-
 foreach ($ns in $Namespaces) {
     Write-Host "Creating cluster-ca-certs ConfigMap in namespace '$ns' from $certsDir..." -ForegroundColor Cyan
 
