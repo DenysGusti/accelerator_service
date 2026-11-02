@@ -169,20 +169,7 @@ If so, set the name of your space/project followed by a slash as value.
 - When the registry service is running, you should be able to log in via  `docker login <registry>:8443` and the
   configured username and password.
 
-1. Convert your Kubernetes config into a base64 string for `WKUBE_SECRET_JSON_B64`:
-   - If using Docker Desktop / WSL, the server endpoint in the kubeconfig should point to `https://host.docker.internal:<port>` (the port can be found with `kubectl cluster-info`).
-   - You can generate the UTF-8 encoded base64 value in one step:
-     ```bash
-     # Linux / WSL
-     kubectl config view --raw -o json | sed 's/127\.0\.0\.1/host.docker.internal/g' | base64 -w0
-     ```
-     Or in PowerShell (copies directly to clipboard):
-     ```powershell
-     $json = (kubectl config view --raw -o json) -replace '127\.0\.0\.1', 'host.docker.internal'
-     [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($json)) | Set-Clipboard
-     ```
-   - Paste the output string as the value of `WKUBE_SECRET_JSON_B64` in `.env.web.be`.
-2. Set `ACCELERATOR_APP_TOKEN` by obtaining a token as follows:
+1. Set `ACCELERATOR_APP_TOKEN` by obtaining a token as follows:
     - Startup the backend service:  
       `docker compose up web_be`
         - This also starts the integrated frontend.
@@ -197,12 +184,29 @@ If so, set the name of your space/project followed by a slash as value.
     - Obtain an access token with superuser rights:  
       `python apply.py get_access_token <your email> <seconds to expiry>`
     - Copy and paste the token as the value of `ACCELERATOR_APP_TOKEN`.
+2. Convert your Kubernetes config into a base64 string for `WKUBE_SECRET_JSON_B64`:
+   - If using Docker Desktop / WSL, the server endpoint in the kubeconfig should point to `https://host.docker.internal:<port>` (the port can be found with `kubectl cluster-info`).
+   - You can generate the UTF-8 encoded base64 value in one step:
+     ```bash
+     # Linux / WSL
+     kubectl config view --raw -o json | sed 's/127\.0\.0\.1/host.docker.internal/g' | base64 -w0
+     ```
+     Or in PowerShell (copies directly to clipboard):
+     ```powershell
+     $json = (kubectl config view --raw -o json) -replace '127\.0\.0\.1', 'host.docker.internal'
+     [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($json)) | Set-Clipboard
+     ```
+   - Paste the output string as the value of `WKUBE_SECRET_JSON_B64` in `.env.web.be`.
 3. Set `USE_HOST_NAMESPACES` to `1` if you use WSL.
-4. Apply the Kubernetes Local Setup Manifest (creates `wkube` namespace, storage classes, and bridges):
+4. Connect your local cluster node container (`desktop-control-plane`) to the Docker Compose network so pods and hostNetwork daemonsets can communicate with local services (e.g. MinIO):
+   ```bash
+   docker network connect accelerator_service_default desktop-control-plane
+   ```
+5. Apply the Kubernetes Local Setup Manifest (creates `wkube` namespace, storage classes, and bridges):
    ```bash
    kubectl apply -f k8s/manifests/k8s-local-setup.yaml
    ```
-5. Apply the CA certificates into `wkube` and `kube-system` namespaces:
+6. Apply the CA certificates into `wkube` and `kube-system` namespaces:
    ```bash
    # Linux / macOS / Git Bash:
    ./scripts/apply_cluster_ca_certs.sh
@@ -210,7 +214,7 @@ If so, set the name of your space/project followed by a slash as value.
    # Windows PowerShell:
    .\scripts\apply_cluster_ca_certs.ps1
    ```
-6. Run the Accelerator CSI Driver locally (for `/mnt/wdrv` support):
+7. Run the Accelerator CSI Driver locally (for `/mnt/wdrv` support):
    When jobs require project space access (`/mnt/wdrv`), the `hf.csi.accelerator` driver dynamically mounts project buckets into worker pods using `hf-mount`.
    - Apply the CSI driver and local DaemonSet:
      ```bash
@@ -237,7 +241,7 @@ If so, set the name of your space/project followed by a slash as value.
         ```bash
         kubectl rollout restart daemonset/hf-csi-node -n kube-system
         ```
-7. Recreate backend services to ensure updated `.env.web.be` settings (Kubeconfig, ports, namespaces) are active:
+8. Recreate backend services to ensure updated `.env.web.be` settings (Kubeconfig, ports, namespaces) are active:
    ```bash
    docker compose -f docker-compose.dev.yml up -d --force-recreate k8s_events scheduler web_be
    ```

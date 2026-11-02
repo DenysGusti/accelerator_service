@@ -7,33 +7,24 @@ metadata:
   name: wkube
 ---
 # ==========================================
-# 1. MINIO BRIDGE (ExternalName to host gateway)
-# ==========================================
-apiVersion: v1
-kind: Service
-metadata:
-  name: minio
-  namespace: wkube
-spec:
-  type: ExternalName
-  externalName: host.docker.internal
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: minio
-  namespace: kube-system
-spec:
-  type: ExternalName
-  externalName: host.docker.internal
----
-# ==========================================
-# 2. REGISTRY BRIDGE (ExternalName to host gateway)
+# 1. REGISTRY BRIDGE (ExternalName to host gateway)
 # ==========================================
 apiVersion: v1
 kind: Service
 metadata:
   name: registry
+  namespace: wkube
+spec:
+  type: ExternalName
+  externalName: host.docker.internal
+---
+# ==========================================
+# 2. MINIO BRIDGE (ExternalName to host gateway)
+# ==========================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio
   namespace: wkube
 spec:
   type: ExternalName
