@@ -234,6 +234,10 @@ If so, set the name of your space/project followed by a slash as value.
         ```bash
         kubectl rollout restart daemonset/hf-csi-node -n kube-system
         ```
+7. Recreate backend services to ensure updated `.env.web.be` settings (Kubeconfig, ports, namespaces) are active:
+   ```bash
+   docker compose -f docker-compose.dev.yml up -d --force-recreate k8s_events scheduler web_be
+   ```
 
 ### [TiTiler](https://developmentseed.org/titiler/) (tile server)
 
