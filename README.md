@@ -198,34 +198,27 @@ If so, set the name of your space/project followed by a slash as value.
       `python apply.py get_access_token <your email> <seconds to expiry>`
     - Copy and paste the token as the value of `ACCELERATOR_APP_TOKEN`.
 3. Set `USE_HOST_NAMESPACES` to `1` if you use WSL.
-4. Ensure the `wkube` workload namespace exists (`kube-system` exists by default):
-   ```bash
-   kubectl create namespace wkube --dry-run=client -o yaml | kubectl apply -f -
-   ```
-5. Apply the Kubernetes Local Bridge Manifest:
+4. Apply the Kubernetes Local Setup Manifest (creates `wkube` namespace, storage classes, and bridges):
    ```bash
    kubectl apply -f k8s/manifests/k8s-local-setup.yaml
    ```
-6. Apply the CA certificates into `wkube` and `kube-system` namespaces:
+5. Apply the CA certificates into `wkube` and `kube-system` namespaces:
    ```bash
-   # Linux / macOS / Git Bash
-   ./scripts/apply_cluster_ca_certs.sh wkube
-   ./scripts/apply_cluster_ca_certs.sh kube-system
+   # Linux / macOS / Git Bash:
+   ./scripts/apply_cluster_ca_certs.sh
+
+   # Windows PowerShell:
+   .\scripts\apply_cluster_ca_certs.ps1
    ```
-   ```powershell
-   # Windows PowerShell
-   .\scripts\apply_cluster_ca_certs.ps1 -Namespace wkube
-   .\scripts\apply_cluster_ca_certs.ps1 -Namespace kube-system
-   ```
-7. Run the Accelerator CSI Driver locally (for `/mnt/wdrv` support):
+6. Run the Accelerator CSI Driver locally (for `/mnt/wdrv` support):
    When jobs require project space access (`/mnt/wdrv`), the `hf.csi.accelerator` driver dynamically mounts project buckets into worker pods using `hf-mount`.
-   - Apply the CSI driver driver and RBAC manifests, and the local Accelerator DaemonSet:
+   - Apply the CSI driver and local DaemonSet:
      ```bash
-     kubectl apply -f ../hf-csi-driver/deploy/kubernetes/crd.yaml
-     kubectl apply -f ../hf-csi-driver/deploy/kubernetes/csidriver.yaml
-     kubectl apply -f ../hf-csi-driver/deploy/kubernetes/serviceaccount.yaml
-     kubectl apply -f ../hf-csi-driver/deploy/kubernetes/rbac.yaml
-     kubectl apply -f k8s/manifests/hf-csi-node.yaml
+     kubectl apply -f ../hf-csi-driver/deploy/kubernetes/crd.yaml \
+       -f ../hf-csi-driver/deploy/kubernetes/csidriver.yaml \
+       -f ../hf-csi-driver/deploy/kubernetes/serviceaccount.yaml \
+       -f ../hf-csi-driver/deploy/kubernetes/rbac.yaml \
+       -f k8s/manifests/hf-csi-node.yaml
      ```
    - (Optional - Local Build): If developing or modifying `hf-csi-driver` code locally instead of using published images:
      1. Build the image locally from source:

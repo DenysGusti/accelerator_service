@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param (
-    [string]$Namespace = "default"
+    [string[]]$Namespaces = @("wkube", "kube-system")
 )
 
 $ErrorActionPreference = "Stop"
@@ -14,24 +14,26 @@ if (-not (Test-Path $devCa)) {
     exit 1
 }
 
-Write-Host "Creating cluster-ca-certs ConfigMap in namespace '$Namespace' from $certsDir..." -ForegroundColor Cyan
+foreach ($ns in $Namespaces) {
+    Write-Host "Creating cluster-ca-certs ConfigMap in namespace '$ns' from $certsDir..." -ForegroundColor Cyan
 
-$args = @(
-    "create", "configmap", "cluster-ca-certs",
-    "--from-file=accelerator-dev-ca.crt=$devCa"
-)
+    $args = @(
+        "create", "configmap", "cluster-ca-certs",
+        "--from-file=accelerator-dev-ca.crt=$devCa"
+    )
 
-if (Test-Path $prodS3) {
-    $args += "--from-file=prod-s3-internal.crt=$prodS3"
+    if (Test-Path $prodS3) {
+        $args += "--from-file=prod-s3-internal.crt=$prodS3"
+    }
+
+    $args += @("-n", $ns, "--dry-run=client", "-o", "yaml")
+
+    $yaml = & kubectl @args
+    $yaml | kubectl apply -f -
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Failed to apply ConfigMap cluster-ca-certs in namespace '$ns'."
+        exit $LASTEXITCODE
+    }
+
+    Write-Host "ConfigMap cluster-ca-certs successfully applied in namespace '$ns'." -ForegroundColor Green
 }
-
-$args += @("-n", $Namespace, "--dry-run=client", "-o", "yaml")
-
-$yaml = & kubectl @args
-$yaml | kubectl apply -f -
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "Failed to apply ConfigMap cluster-ca-certs in namespace '$Namespace'."
-    exit $LASTEXITCODE
-}
-
-Write-Host "ConfigMap cluster-ca-certs successfully applied in namespace '$Namespace'." -ForegroundColor Green
