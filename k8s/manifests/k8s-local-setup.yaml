@@ -133,20 +133,40 @@ spec:
           command: [ "/bin/sh", "-c" ]
           args:
             - |
-              mkdir -p /host/etc/containerd/certs.d/registry:8443
-              cp -f /config/ca.crt /host/etc/containerd/certs.d/registry:8443/ca.crt
-              cp -f /config/hosts.toml /host/etc/containerd/certs.d/registry:8443/hosts.toml
+              mkdir -p /host-etc/containerd/certs.d/registry:8443
+              cp -f /config/ca.crt /host-etc/containerd/certs.d/registry:8443/ca.crt
+              cp -f /config/hosts.toml /host-etc/containerd/certs.d/registry:8443/hosts.toml
               echo "Registry certificates and hosts.toml installed successfully"
+
+              if [ -d /cluster-ca-certs ]; then
+                mkdir -p /host-root/usr/local/share/ca-certificates
+                cp -f /cluster-ca-certs/*.crt /host-root/usr/local/share/ca-certificates/ 2>/dev/null || true
+                chroot /host-root /usr/sbin/update-ca-certificates || true
+                echo "Cluster root CA certificates installed on node successfully"
+              fi
+
               sleep infinity
           volumeMounts:
             - name: host-etc
-              mountPath: /host/etc
+              mountPath: /host-etc
+            - name: host-root
+              mountPath: /host-root
             - name: config-vol
               mountPath: /config
+            - name: cluster-ca-certs-vol
+              mountPath: /cluster-ca-certs
+              readOnly: true
       volumes:
         - name: host-etc
           hostPath:
             path: /etc
+        - name: host-root
+          hostPath:
+            path: /
         - name: config-vol
           configMap:
             name: registry-certs-config
+        - name: cluster-ca-certs-vol
+          configMap:
+            name: cluster-ca-certs
+            optional: true

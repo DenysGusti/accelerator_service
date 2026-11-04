@@ -65,12 +65,6 @@ To import the certificate into the Windows Root store (auto-elevates to Administ
 .\scripts\import_certs_certutil.ps1
 ```
 
-To trust the certificate inside your local cluster node container (`desktop-control-plane`):
-```bash
-docker cp certs/public.crt desktop-control-plane:/usr/local/share/ca-certificates/accelerator-dev-ca.crt
-docker exec -i desktop-control-plane update-ca-certificates
-```
-
 > [!IMPORTANT]
 > Whenever certificates are generated or regenerated, force-recreate the containers so they immediately reload the new files from disk:
 > ```bash
@@ -203,11 +197,9 @@ If so, set the name of your space/project followed by a slash as value.
      ```
    - Paste the output string as the value of `WKUBE_SECRET_JSON_B64` in `.env.web.be`.
 3. Set `USE_HOST_NAMESPACES` to `1` if you use WSL.
-4. Connect your local cluster node container (`desktop-control-plane`) to the Docker Compose network and trust the dev CA:
+4. Connect your local cluster node container (`desktop-control-plane`) to the Docker Compose network:
    ```bash
    docker network connect accelerator_service_default desktop-control-plane
-   docker cp certs/public.crt desktop-control-plane:/usr/local/share/ca-certificates/accelerator-dev-ca.crt
-   docker exec -i desktop-control-plane update-ca-certificates
    ```
 5. Apply the Kubernetes Local Setup Manifest (creates `wkube` namespace, storage classes, and bridges):
    ```bash
