@@ -10,27 +10,31 @@ if (-not $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Adm
 
 $certsDir = Join-Path $PSScriptRoot "..\certs"
 
-$devCaCert = Join-Path $certsDir "ca\ca.crt"
+$devCaCert = Join-Path $certsDir "public.crt"
 $prodS3Cert = Join-Path $certsDir "prod-s3-internal.crt"
 
-# 1. Clean up outdated Accelerator-Dev-Root-CA from Root store (if re-generating new keys)
-$existingDevCas = Get-ChildItem Cert:\LocalMachine\Root | Where-Object { $_.Subject -eq "CN=Accelerator-Dev-Root-CA" }
-foreach ($cert in $existingDevCas) {
-    if (Test-Path $devCaCert) {
-        $newCert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($devCaCert)
-        if ($cert.Thumbprint -ne $newCert.Thumbprint) {
-            Write-Host "Removing outdated Accelerator-Dev-Root-CA ($($cert.Thumbprint))..." -ForegroundColor Yellow
-            certutil.exe -delstore root $cert.Thumbprint | Out-Null
-        }
-    }
+$newThumbprint = $null
+if (Test-Path $devCaCert) {
+    $newCert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($devCaCert)
+    $newThumbprint = $newCert.Thumbprint
+}
+
+# 1. Clean up outdated Accelerator certificates from LocalMachine and CurrentUser Root stores
+$oldCerts = Get-ChildItem Cert:\LocalMachine\Root, Cert:\CurrentUser\Root -ErrorAction SilentlyContinue |
+    Where-Object { ($_.Subject -like "*CN=Accelerator*" -or $_.Subject -like "*CN=IIASA Accelerator*") -and ($_.Thumbprint -ne $newThumbprint) }
+
+foreach ($cert in $oldCerts) {
+    Write-Host "Removing outdated cert '$($cert.Subject)' ($($cert.Thumbprint))..." -ForegroundColor Yellow
+    certutil.exe -delstore root $cert.Thumbprint | Out-Null
+    certutil.exe -user -delstore root $cert.Thumbprint | Out-Null
 }
 
 # 2. Import current Dev Root CA
 if (Test-Path $devCaCert) {
-    Write-Host "Importing Dev Root CA ($devCaCert)..." -ForegroundColor Cyan
+    Write-Host "Importing Dev CA ($devCaCert)..." -ForegroundColor Cyan
     certutil.exe -addstore -f root $devCaCert
 } else {
-    Write-Warning "Dev Root CA not found at $devCaCert. Run ./scripts/generate_certs.sh first."
+    Write-Warning "Dev CA cert not found at $devCaCert. Run ./scripts/generate_certs.sh first."
 }
 
 # 3. Import Prod Internal S3 CA

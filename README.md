@@ -53,28 +53,23 @@ clone it somewhere convenient, and point `ACCMS_PROJECT_FOLDER` at the resulting
 
 ### TLS Certificates (`certs/`)
 
-All development TLS certificates are unified into a single self-signed **Dev Root CA & Server Certificate** (`certs/ca/ca.crt`), which acts as both the trust anchor (for clients, containers, and Windows) and the serving certificate for MinIO and Backend.
+All development TLS certificates are unified into a single self-signed **Dev Root CA & Server Certificate** (`certs/public.crt`) with its private key (`certs/private.key`), located directly in the `certs/` directory without subfolders. It acts as both the trust anchor (for clients, containers, and Windows) and the serving certificate for MinIO, Backend, and Recon.
 
 To generate/regenerate certificates:
 ```bash
 # Linux / macOS / Git Bash:
 ./scripts/generate_certs.sh
-
-# Windows PowerShell:
-.\scripts\generate_certs.ps1
 ```
 
-To import the certificate into the Windows Root store (auto-elevates to Administrator if needed):
+To import the certificate into the Windows Root store (auto-elevates to Administrator if needed and removes old outdated certificates):
 ```powershell
 .\scripts\import_certs_certutil.ps1
 ```
 
 | Path | Purpose |
 |---|---|
-| `certs/ca/ca.crt` | Unified Dev Root CA & Server Certificate (`CA:TRUE` with SANs for localhost, minio, web_be, localip, host.docker.internal) |
-| `certs/ca/ca.key` | Dev private key |
-| `certs/minio/` | Server cert (`public.crt`) and private key (`private.key`) for MinIO (copied from `certs/ca/`) |
-| `certs/backend/` | Server cert (`public.crt`) and private key (`private.key`) for Backend / Recon (copied from `certs/ca/`) |
+| `certs/public.crt` | Unified Dev Root CA & Server Certificate (`CA:TRUE` with SANs for `localhost`, `minio`, `web_be`, `localip`, `host.docker.internal`, `127.0.0.1`) |
+| `certs/private.key` | Unified private key used by MinIO, Backend, and Recon |
 | `certs/prod-s3-internal.crt` | IIASA ICT Root CA for internal S3 access |
 
 ### MinIO (block storage, S3)

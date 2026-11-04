@@ -39,7 +39,7 @@ services:
       - 9001:9001
     volumes:
       - minio_data:/data
-      - "./certs/minio:/home/nonroot/.minio/certs"
+      - "./certs:/home/nonroot/.minio/certs"
     command: server /data --console-address ":9001" --certs-dir /home/nonroot/.minio/certs
     env_file:
       - ./.env.minio
@@ -63,8 +63,8 @@ services:
       dockerfile: dockerfiles/Dockerfile.devc
     volumes:
       - "${PROJECT_FOLDER:?err}:/app/"
-      - "./certs/ca/ca.crt:/usr/local/share/ca-certificates/accelerator-dev-ca.crt:ro"
-      - "./certs/backend:/app/certs:ro"
+      - "./certs/public.crt:/usr/local/share/ca-certificates/accelerator-dev-ca.crt:ro"
+      - "./certs:/app/certs:ro"
       - "./certs/prod-s3-internal.crt:/usr/local/share/ca-certificates/prod-s3-internal.crt:ro"
     env_file:
       - ./.env.web.be
@@ -85,8 +85,8 @@ services:
       dockerfile: dockerfiles/Dockerfile.be
     volumes:
       - "${PROJECT_FOLDER:?err}:/app/"
-      - "./certs/ca/ca.crt:/usr/local/share/ca-certificates/accelerator-dev-ca.crt:ro"
-      - "./certs/backend:/app/certs:ro"
+      - "./certs/public.crt:/usr/local/share/ca-certificates/accelerator-dev-ca.crt:ro"
+      - "./certs:/app/certs:ro"
     ports:
       - 8000:8000
       - 20102:20102
@@ -116,8 +116,8 @@ services:
 #      dockerfile: dockerfiles/Dockerfile.devc
 #    volumes:
 #      - "${PROJECT_FOLDER:?err}:/app/"
-#      - "./certs/ca/ca.crt:/usr/local/share/ca-certificates/accelerator-dev-ca.crt:ro"
-#      - "./certs/backend:/app/certs:ro"
+#      - "./certs/public.crt:/usr/local/share/ca-certificates/accelerator-dev-ca.crt:ro"
+#      - "./certs:/app/certs:ro"
 #      - "./certs/prod-s3-internal.crt:/usr/local/share/ca-certificates/prod-s3-internal.crt:ro"
 #      - ../../xet-core:/app/xet-core
 #      - ../xet_shard_parser:/app/xet_shard_parser
@@ -160,8 +160,8 @@ services:
       dockerfile: dockerfiles/Dockerfile.recon.dev
     volumes:
       - "${PROJECT_FOLDER:?err}:/app/"
-      - "./certs/ca/ca.crt:/usr/local/share/ca-certificates/accelerator-dev-ca.crt:ro"
-      - "./certs/backend:/app/certs:ro"
+      - "./certs/public.crt:/usr/local/share/ca-certificates/accelerator-dev-ca.crt:ro"
+      - "./certs:/app/certs:ro"
       - "./certs/prod-s3-internal.crt:/usr/local/share/ca-certificates/prod-s3-internal.crt:ro"
     ports:
       - 8900:8900

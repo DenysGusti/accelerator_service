@@ -10,7 +10,7 @@ else
     NAMESPACES=("$@")
 fi
 
-DEV_CA="${CERTS_DIR}/ca/ca.crt"
+DEV_CA="${CERTS_DIR}/public.crt"
 PROD_S3="${CERTS_DIR}/prod-s3-internal.crt"
 
 if [[ ! -f "$DEV_CA" ]]; then

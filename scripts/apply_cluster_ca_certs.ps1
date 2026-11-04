@@ -6,7 +6,7 @@ param (
 $ErrorActionPreference = "Stop"
 
 $certsDir = Join-Path $PSScriptRoot "..\certs"
-$devCa = Join-Path $certsDir "ca\ca.crt"
+$devCa = Join-Path $certsDir "public.crt"
 $prodS3 = Join-Path $certsDir "prod-s3-internal.crt"
 
 if (-not (Test-Path $devCa)) {

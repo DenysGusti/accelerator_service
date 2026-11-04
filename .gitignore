@@ -8,12 +8,7 @@ titiler/
 registry_auth/*
 !registry_auth/.gitkeep
 
-certs/backend/*
-!certs/backend/.gitkeep
-certs/ca/*
-!certs/ca/.gitkeep
-certs/minio/*
-!certs/minio/.gitkeep
+certs/*
 !certs/prod-s3-internal.crt
 
 k8s/manifests/secrets/accelerator-be-secret.yaml
@@ -26,4 +21,4 @@ k8s/manifests/secrets/accms-secrets.yaml
 k8s/manifests/secrets/sshgateway-secret.yaml
 k8s/manifests/secrets/acc-threads-secrets.yaml
 k8s/manifests/secrets/titiler-secret.yaml
-.idea
+.idea/
