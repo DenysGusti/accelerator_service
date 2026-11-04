@@ -13,12 +13,12 @@ All development TLS certificates are unified into a single self-signed **Dev Roo
 
 ### 1. Generate Development Certificates
 ```bash
-openssl req -x509 -newkey rsa:2048 -nodes -keyout certs/private.key -out certs/public.crt -days 1461 -subj "/CN=Accelerator-Dev-Root-CA" -addext "basicConstraints=critical,CA:TRUE" -addext "keyUsage=critical,digitalSignature,keyEncipherment,keyCertSign,cRLSign" -addext "extendedKeyUsage=serverAuth,clientAuth" -addext "subjectAltName=DNS:localhost,DNS:minio,DNS:web_be,DNS:web-be,DNS:localip,DNS:host.docker.internal,DNS:registry,IP:127.0.0.1"
+openssl req -x509 -newkey rsa:2048 -nodes -keyout certs/private.key -out certs/public.crt -days 1461 -subj "/CN=Accelerator-Dev-Root-CA" -addext "basicConstraints=critical,CA:FALSE" -addext "keyUsage=critical,digitalSignature,keyEncipherment" -addext "extendedKeyUsage=serverAuth,clientAuth" -addext "subjectAltName=DNS:localhost,DNS:minio,DNS:web_be,DNS:web-be,DNS:localip,DNS:host.docker.internal,DNS:registry,IP:127.0.0.1"
 ```
 
 | Path | Purpose |
 |---|---|
-| `certs/public.crt` | Unified Dev Root CA & Server Certificate (`CA:TRUE` with SANs for `localhost`, `minio`, `registry`, `web_be`, `localip`, `host.docker.internal`, `127.0.0.1`) |
+| `certs/public.crt` | Unified Dev Self-Signed Server & Trust Anchor Certificate (`CA:FALSE` with SANs for `localhost`, `minio`, `registry`, `web_be`, `localip`, `host.docker.internal`, `127.0.0.1`) |
 | `certs/private.key` | Unified private key used by MinIO, Registry, Backend, and Recon |
 | `certs/prod-s3-internal.crt` | IIASA ICT Root CA for internal S3 access |
 
