@@ -15,8 +15,32 @@ volumes:
     external: false
   neo4j_plugins:
     external: false
+  # Claude Code config + chat history (CLAUDE_CONFIG_DIR), shared by root-run dev services
+  claude_config:
+    external: false
+  # Separate volume for scheduler, which runs as the non-root `ubuntu` user
+  claude_config_scheduler:
+    external: false
+  # Antigravity VS Code extension config + chat history (~/.gemini), shared by root-run dev services
+  antigravity_config:
+    external: false
+  # Separate volume for scheduler, which runs as the non-root `ubuntu` user
+  antigravity_config_scheduler:
+    external: false
 
 services:
+  claude-config-init:
+    image: busybox:1.36
+    command: chown -R 1000:1000 /claude
+    volumes:
+      - claude_config_scheduler:/claude
+
+  antigravity-config-init:
+    image: busybox:1.36
+    command: chown -R 1000:1000 /gemini
+    volumes:
+      - antigravity_config_scheduler:/gemini
+
   db:
     image: postgres:14
     environment:
@@ -33,7 +57,7 @@ services:
       retries: 5
 
   minio:
-    image: cgr.dev/chainguard/minio:latest
+    image: quay.io/minio/minio:latest
     ports:
       - 9000:9000
       - 9001:9001
@@ -46,6 +70,7 @@ services:
 
   redis:
     image: bitnami/redis:latest
+    # command: /opt/bitnami/scripts/redis/run.sh --aof-load-corrupt-tail-max-size 33
     ports:
       - "6379:6379"
     environment:
@@ -63,8 +88,12 @@ services:
       dockerfile: dockerfiles/Dockerfile.devc
     volumes:
       - "${PROJECT_FOLDER:?err}:/app/"
+      - claude_config:/claude
+      - antigravity_config:/root/.gemini
     env_file:
       - ./.env.web.be
+    environment:
+      - CLAUDE_CONFIG_DIR=/claude
     stdin_open: true
     command: celery -A xet_janitor.celery_app worker --loglevel=info -Q janitor_queue -B
     tty: true
@@ -109,10 +138,13 @@ services:
       - ../../xet-core:/app/xet-core
       - ../xet_shard_parser:/app/xet_shard_parser
       - ../../hf-mount:/app/hf-mount
+      - ../../gamble-core:/app/gamble-core
       - ../../hf-csi-driver:/app/hf-csi-driver
       - ${ACLI_PROJECT_FOLDER:?err}:/app/accli
       - ${WKUBE_JOB_AGENT_PROJECT_FOLDER:?err}:/app/wkube_job_agent
       - ${WKUBE_JOB_GATEWAY_INTERACTIVE_PROJECT_FOLDER:?err}:/app/wkube_job_gateway_interactive
+      - claude_config:/claude
+      - antigravity_config:/root/.gemini
 
     ports:
       - 8000:8000
@@ -123,6 +155,8 @@ services:
     env_file:
       - ./.env.web.be
       - ./.env.web.fe
+    environment:
+      - CLAUDE_CONFIG_DIR=/claude
     stdin_open: true
     tty: true
     privileged: true
@@ -142,10 +176,14 @@ services:
       dockerfile: dockerfiles/Dockerfile.recon.dev
     volumes:
       - "${PROJECT_FOLDER:?err}:/app/"
+      - claude_config:/claude
+      - antigravity_config:/root/.gemini
     ports:
       - 8900:8900
     env_file:
       - ./.env.web.be
+    environment:
+      - CLAUDE_CONFIG_DIR=/claude
     stdin_open: true
     tty: true
     depends_on:
@@ -184,9 +222,17 @@ services:
     privileged: true
     env_file:
       - ./.env.web.be
+    environment:
+      - CLAUDE_CONFIG_DIR=/claude
     volumes:
       - "${PROJECT_FOLDER:?err}:/home/ubuntu/app/"
+      - claude_config_scheduler:/claude
+      - antigravity_config_scheduler:/home/ubuntu/.gemini
     depends_on:
+      claude-config-init:
+        condition: service_completed_successfully
+      antigravity-config-init:
+        condition: service_completed_successfully
       web_be:
         condition: service_started
       redis:
@@ -200,8 +246,14 @@ services:
       dockerfile: dockerfiles/Dockerfile.k8s.events
     env_file:
       - ./.env.web.be
+    environment:
+      - CLAUDE_CONFIG_DIR=/claude
     volumes:
       - "${PROJECT_FOLDER:?err}:/app/"
+      - claude_config:/claude
+      - antigravity_config:/root/.gemini
+    # volumes:
+    #   - "${SCHEDULER_PROJECT_FOLDER:?err}:/app/"
     depends_on:
       web_be:
         condition: service_started
@@ -215,7 +267,10 @@ services:
       - 8002:8000
     volumes:
       - "${TITILER_FOLDER:?err}:/app/"
+      - claude_config:/claude
+      - antigravity_config:/root/.gemini
     environment:
+      - CLAUDE_CONFIG_DIR=/claude
       - TITILER_API_CORS_ORIGINS=https://localhost:8080,http://localhost:8080,https://accelerator.iiasa.ac.at,https://141-iiasa-forestnavigator.vercel.app
 
   acli:
@@ -226,7 +281,10 @@ services:
     privileged: true
     volumes:
       - "${ACLI_PROJECT_FOLDER:?err}:/app/"
-
+      - claude_config:/claude
+      - antigravity_config:/root/.gemini
+    environment:
+      - CLAUDE_CONFIG_DIR=/claude
   # accms:
   #   build:
   #     context: "${ACCMS_PROJECT_FOLDER:?err}"

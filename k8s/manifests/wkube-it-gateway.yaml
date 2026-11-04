@@ -13,28 +13,39 @@ spec:
         app: wkube-it-gateway
     spec:
 
+      securityContext:
+        fsGroup: 65534
+
       volumes:
         - name: tls-certs
           secret:
             secretName: at.ac.iiasa.wkube
+        - name: tunnel-keys
+          secret:
+            secretName: wkube-tunnel-gateway-keys
+            defaultMode: 0400
       
       containers:
         - name: wkube-it-gateway
-          image: registry.iiasa.ac.at/accelerator/wkube-it-gateway:0ef928d
+          image: registry.iiasa.ac.at/accelerator/wkube-it-gateway:c03e62d
           imagePullPolicy: Always
-          env:
-            - name: PUBLIC_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: wkube-it-gateway-ssh-keys
-                  key: id_ed25519.pub
-            - name: PASSWORD_ACCESS
-              value: "false"
+          # env:
+          #   - name: PUBLIC_KEY
+          #     valueFrom:
+          #       secretKeyRef:
+          #         name: wkube-it-gateway-ssh-keys
+          #         key: id_ed25519.pub
+          #   - name: PASSWORD_ACCESS
+          #     value: "false"
           
           volumeMounts:
             - name: tls-certs
               mountPath: "/etc/ssl/certs"
               readOnly: true
+            - name: tunnel-keys
+              mountPath: "/etc/wkube-tunnel"
+              readOnly: true
+            
           
           ports:
           - containerPort: 6473
@@ -76,4 +87,4 @@ spec:
     - protocol: TCP
       port: 8914
       targetPort: 2222
-      nodePort: 30188
+      nodePort: 31188

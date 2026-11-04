@@ -25,7 +25,7 @@ spec:
                   - hpg1025
       containers:
       - name: xet-reconstruction
-        image: registry.iiasa.ac.at/accelerator/recon:8853411b
+        image: registry.iiasa.ac.at/accelerator/recon:ad48c342
         envFrom:
           - secretRef:
               name: accelerator-be-secret

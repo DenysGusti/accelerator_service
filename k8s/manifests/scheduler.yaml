@@ -12,11 +12,11 @@ spec:
       labels:
         app: accelerator-scheduler
       annotations:
-        kubernetes.io/restart-at: "2025-04-18T16:48:22+0661"
+        kubernetes.io/restart-at: "2026-04-18T16:48:22+0661"
     spec:
       containers:
       - name: accelerator-scheduler
-        image: registry.iiasa.ac.at/accelerator/scheduler:38da57b4
+        image: registry.iiasa.ac.at/accelerator/scheduler:2159644f
         command: ["/home/ubuntu/.local/bin/celery"]
         args:
           - "-A"
@@ -32,7 +32,10 @@ spec:
               name: accelerator-be-secret
         env:
           - name: WKUBE_AGENT_PULLER
-            value: "registry.iiasa.ac.at/accelerator/wkube-agent-puller:fce9ffd"
+            # value: "registry.iiasa.ac.at/accelerator/wkube-agent-puller:b3bbb08"
+            value: "wrufesh/wkube-agent-puller"
+          - name: WAGT_DEBUG
+            value: "1"
         imagePullPolicy: Always
         resources:
           limits:

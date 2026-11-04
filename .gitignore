@@ -22,3 +22,6 @@ k8s/manifests/secrets/sshgateway-secret.yaml
 k8s/manifests/secrets/acc-threads-secrets.yaml
 k8s/manifests/secrets/titiler-secret.yaml
 .idea
+
+k8s/manifests/wkube_tunnel_api_keys/*
+!k8s/manifests/wkube_tunnel_api_keys/.gitkeep

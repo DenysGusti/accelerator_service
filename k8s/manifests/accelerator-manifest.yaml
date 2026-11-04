@@ -3,6 +3,7 @@ kind: Deployment
 metadata:
   name: accelerator-be
 spec:
+  progressDeadlineSeconds: 900
   replicas: 2
   selector:
     matchLabels:
@@ -12,18 +13,25 @@ spec:
       labels:
         app: accelerator-be
       annotations:
-        kubernetes.io/restart-at: "2025-10-22T10:50:43+0510"
+        kubernetes.io/restart-at: "2025-11-03T12:01:43+00:00"
     spec:
       containers:
       - name: acc-be
         # image: registry.iiasa.ac.at/accelerator/iiasa-acc-be:a1837404
-        image: registry.iiasa.ac.at/accelerator/iiasa-acc-be:19e80f94
+        image: registry.iiasa.ac.at/accelerator/iiasa-acc-be:0d68bb14
         envFrom:
           - secretRef:
               name: accelerator-be-secret
         imagePullPolicy: Always
         ports:
         - containerPort: 8000
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          periodSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
         resources:
           limits:
             memory: "4095Mi"

@@ -5,10 +5,10 @@ metadata:
 spec:
   containers:
   - name: accelerator-k8sworker
-    image: registry.iiasa.ac.at/accelerator/iiasa-acc-k8sworker:7cb7fbc
+    image: registry.iiasa.ac.at/accelerator/iiasa-acc-k8sworker:2df2034c
     envFrom:
       - secretRef:
-          name: k8s-worker-secret
+          name: accelerator-be-secret
     imagePullPolicy: Always
     resources:
       limits:
