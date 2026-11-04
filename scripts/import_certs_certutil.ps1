@@ -34,7 +34,7 @@ if (Test-Path $devCaCert) {
     Write-Host "Importing Dev CA ($devCaCert)..." -ForegroundColor Cyan
     certutil.exe -addstore -f root $devCaCert
 } else {
-    Write-Warning "Dev CA cert not found at $devCaCert. Run ./scripts/generate_certs.sh first."
+    Write-Warning "Dev CA cert not found at $devCaCert. Please generate certs/public.crt and certs/private.key first."
 }
 
 # 3. Import Prod Internal S3 CA

@@ -57,8 +57,7 @@ All development TLS certificates are unified into a single self-signed **Dev Roo
 
 To generate/regenerate certificates:
 ```bash
-# Linux / macOS / Git Bash:
-./scripts/generate_certs.sh
+openssl req -x509 -newkey rsa:2048 -nodes -keyout certs/private.key -out certs/public.crt -days 1461 -subj "/CN=Accelerator-Dev-Root-CA" -addext "basicConstraints=critical,CA:TRUE" -addext "keyUsage=critical,digitalSignature,keyEncipherment,keyCertSign,cRLSign" -addext "extendedKeyUsage=serverAuth,clientAuth" -addext "subjectAltName=DNS:localhost,DNS:minio,DNS:web_be,DNS:web-be,DNS:localip,DNS:host.docker.internal,IP:127.0.0.1"
 ```
 
 To import the certificate into the Windows Root store (auto-elevates to Administrator if needed and removes old outdated certificates):
@@ -76,7 +75,7 @@ To import the certificate into the Windows Root store (auto-elevates to Administ
 
 1. Generate TLS certificates (if not already done):
    ```bash
-   ./scripts/generate_certs.sh
+   openssl req -x509 -newkey rsa:2048 -nodes -keyout certs/private.key -out certs/public.crt -days 1461 -subj "/CN=Accelerator-Dev-Root-CA" -addext "basicConstraints=critical,CA:TRUE" -addext "keyUsage=critical,digitalSignature,keyEncipherment,keyCertSign,cRLSign" -addext "extendedKeyUsage=serverAuth,clientAuth" -addext "subjectAltName=DNS:localhost,DNS:minio,DNS:web_be,DNS:web-be,DNS:localip,DNS:host.docker.internal,IP:127.0.0.1"
    ```
 2. Start the service:
    ```
@@ -207,11 +206,8 @@ If so, set the name of your space/project followed by a slash as value.
    ```
 6. Apply the CA certificates into `wkube` and `kube-system` namespaces:
    ```bash
-   # Linux / macOS / Git Bash:
-   ./scripts/apply_cluster_ca_certs.sh
-
-   # Windows PowerShell:
-   .\scripts\apply_cluster_ca_certs.ps1
+   kubectl create configmap cluster-ca-certs --from-file=accelerator-dev-ca.crt=certs/public.crt --from-file=prod-s3-internal.crt=certs/prod-s3-internal.crt -n wkube --dry-run=client -o yaml | kubectl apply -f -
+   kubectl create configmap cluster-ca-certs --from-file=accelerator-dev-ca.crt=certs/public.crt --from-file=prod-s3-internal.crt=certs/prod-s3-internal.crt -n kube-system --dry-run=client -o yaml | kubectl apply -f -
    ```
 7. Run the Accelerator CSI Driver locally (for `/mnt/wdrv` support):
    When jobs require project space access (`/mnt/wdrv`), the `hf.csi.accelerator` driver dynamically mounts project buckets into worker pods using `hf-mount`.
