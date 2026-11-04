@@ -7,7 +7,86 @@
     * **Warning:** Docker Desktop on Windows has issues with building and Wine.
     * On Linux, success has been had with Rancher desktop.
 
-## Services
+## Step 1: TLS Certificates (`certs/`)
+
+All development TLS certificates are unified into a single self-signed **Dev Root CA & Server Certificate** (`certs/public.crt`) with its private key (`certs/private.key`), located directly in the `certs/` directory without subfolders. It acts as both the trust anchor (for clients, containers, and Windows) and the serving certificate for MinIO, Docker Registry, Backend, and Recon.
+
+### 1. Generate Development Certificates
+```bash
+openssl req -x509 -newkey rsa:2048 -nodes -keyout certs/private.key -out certs/public.crt -days 1461 -subj "/CN=Accelerator-Dev-Root-CA" -addext "basicConstraints=critical,CA:TRUE" -addext "keyUsage=critical,digitalSignature,keyEncipherment,keyCertSign,cRLSign" -addext "extendedKeyUsage=serverAuth,clientAuth" -addext "subjectAltName=DNS:localhost,DNS:minio,DNS:web_be,DNS:web-be,DNS:localip,DNS:host.docker.internal,DNS:registry,IP:127.0.0.1"
+```
+
+| Path | Purpose |
+|---|---|
+| `certs/public.crt` | Unified Dev Root CA & Server Certificate (`CA:TRUE` with SANs for `localhost`, `minio`, `registry`, `web_be`, `localip`, `host.docker.internal`, `127.0.0.1`) |
+| `certs/private.key` | Unified private key used by MinIO, Registry, Backend, and Recon |
+| `certs/prod-s3-internal.crt` | IIASA ICT Root CA for internal S3 access |
+
+### 2. Import into Windows Root Store
+(Auto-elevates to Administrator if needed and removes old outdated certificates):
+```powershell
+.\scripts\import_certs_certutil.ps1
+```
+
+## Step 2: Kubernetes Local Cluster Setup
+
+Prepare the local Kubernetes cluster prerequisites before starting Docker services:
+
+### 1. Apply Local Setup Manifest
+Creates the `wkube` workload namespace, host bridge services (`registry`, `minio`, `web-be`), storage classes (`local-path`, `nfs-rwx`, `longhorn`), and the `containerd-registry-trust` DaemonSet:
+```bash
+kubectl apply -f k8s/manifests/k8s-local-setup.yaml
+```
+
+### 2. Apply CA Certificates ConfigMap to Cluster
+Installs the dev root CA and internal S3 CA into `wkube` and `kube-system`, and restarts the containerd trust daemonset so the node immediately trusts the local registry:
+```bash
+kubectl create configmap cluster-ca-certs --from-file=accelerator-dev-ca.crt=certs/public.crt --from-file=prod-s3-internal.crt=certs/prod-s3-internal.crt -n wkube --dry-run=client -o yaml | kubectl apply -f -
+kubectl create configmap cluster-ca-certs --from-file=accelerator-dev-ca.crt=certs/public.crt --from-file=prod-s3-internal.crt=certs/prod-s3-internal.crt -n kube-system --dry-run=client -o yaml | kubectl apply -f -
+kubectl rollout restart ds/containerd-registry-trust -n kube-system
+```
+
+### 3. Connect Cluster Node to Docker Compose Network
+Connect your local cluster node container (e.g. `desktop-control-plane`) to the Compose network so cluster pods can reach container bridges:
+```bash
+# Create network first if compose hasn't run yet:
+docker network create accelerator_service_default 2>/dev/null || true
+docker network connect accelerator_service_default desktop-control-plane
+```
+
+### 4. Setup Accelerator CSI Driver (for `/mnt/wdrv` support)
+When jobs require project space access (`/mnt/wdrv`), the `hf.csi.accelerator` driver dynamically mounts project buckets into worker pods using `hf-mount`.
+
+- Apply the CSI driver and local DaemonSet:
+  ```bash
+  kubectl apply -f ../hf-csi-driver/deploy/kubernetes/crd.yaml -f ../hf-csi-driver/deploy/kubernetes/serviceaccount.yaml -f ../hf-csi-driver/deploy/kubernetes/rbac.yaml -f k8s/manifests/hf-csi-node.yaml
+  ```
+- *(Optional - Local Build)*: If developing or modifying `hf-csi-driver`, `hf-mount`, or `wkube_job_agent` code locally instead of using published images:
+  1. Build the images locally from source:
+     ```bash
+     docker build -t ghcr.io/wrufesh/hf-csi-driver:v0.9.2-acc-p11 ../hf-csi-driver
+     docker build -t ghcr.io/wrufesh/hf-mount-fuse:v0.6.5-acc-pr140-p14 ../hf-mount
+     docker build -t registry.iiasa.ac.at/accelerator/wkube-agent-puller:latest ../wkube_job_agent
+     ```
+  2. Import the images into your local cluster node (`desktop-control-plane`):
+     ```bash
+     # Linux / macOS / Git Bash:
+     docker save ghcr.io/wrufesh/hf-csi-driver:v0.9.2-acc-p11 | docker exec -i desktop-control-plane ctr -n k8s.io images import -
+     docker save ghcr.io/wrufesh/hf-mount-fuse:v0.6.5-acc-pr140-p14 | docker exec -i desktop-control-plane ctr -n k8s.io images import -
+     docker save registry.iiasa.ac.at/accelerator/wkube-agent-puller:latest | docker exec -i desktop-control-plane ctr -n k8s.io images import -
+     ```
+     ```powershell
+     # Windows PowerShell (avoiding binary pipeline corruption):
+     cmd.exe /c "docker save ghcr.io/wrufesh/hf-csi-driver:v0.9.2-acc-p11 | docker exec -i desktop-control-plane ctr -n k8s.io images import -"
+     cmd.exe /c "docker save ghcr.io/wrufesh/hf-mount-fuse:v0.6.5-acc-pr140-p14 | docker exec -i desktop-control-plane ctr -n k8s.io images import -"
+     cmd.exe /c "docker save registry.iiasa.ac.at/accelerator/wkube-agent-puller:latest | docker exec -i desktop-control-plane ctr -n k8s.io images import -"
+     ```
+  3. Restart the DaemonSet:
+     ```bash
+     kubectl rollout restart daemonset/hf-csi-node -n kube-system
+     ```
+
+## Step 3: Docker Services
 
 To set up the services, copy the default Docker compose `.env*` files from the `sample_dotenv/` folder into the working
 directory root (containing this `README.md`). Beware: these files have a leading dot and are normally hidden. Customize
@@ -44,44 +123,12 @@ clone it somewhere convenient, and point `ACCMS_PROJECT_FOLDER` at the resulting
     - `su -- postgres -c "createdb accelerator"`
     - `su -- postgres -c "createdb acceleratortest"`
     - `su -- postgres -c "createdb accms"`
-    - `su -- postgres -c "createdb thrd"`
+    - `su -- postgres -c "dropdb thrd"`
 4. When a database already exists, you may wish to drop it first to start with a clean state:
     - `su -- postgres -c "dropdb accelerator"`
     - `su -- postgres -c "dropdb acceleratortest"`
     - `su -- postgres -c "dropdb accms"`
     - `su -- postgres -c "dropdb thrd"`
-
-### TLS Certificates (`certs/`)
-
-All development TLS certificates are unified into a single self-signed **Dev Root CA & Server Certificate** (`certs/public.crt`) with its private key (`certs/private.key`), located directly in the `certs/` directory without subfolders. It acts as both the trust anchor (for clients, containers, and Windows) and the serving certificate for MinIO, Docker Registry, Backend, and Recon.
-
-To generate/regenerate certificates:
-```bash
-openssl req -x509 -newkey rsa:2048 -nodes -keyout certs/private.key -out certs/public.crt -days 1461 -subj "/CN=Accelerator-Dev-Root-CA" -addext "basicConstraints=critical,CA:TRUE" -addext "keyUsage=critical,digitalSignature,keyEncipherment,keyCertSign,cRLSign" -addext "extendedKeyUsage=serverAuth,clientAuth" -addext "subjectAltName=DNS:localhost,DNS:minio,DNS:web_be,DNS:web-be,DNS:localip,DNS:host.docker.internal,DNS:registry,IP:127.0.0.1"
-```
-
-To import the certificate into the Windows Root store (auto-elevates to Administrator if needed and removes old outdated certificates):
-```powershell
-.\scripts\import_certs_certutil.ps1
-```
-
-> [!IMPORTANT]
-> Whenever certificates are generated or regenerated:
-> 1. Update the cluster ConfigMap and restart the containerd trust daemonset:
->    ```bash
->    kubectl create configmap cluster-ca-certs --from-file=accelerator-dev-ca.crt=certs/public.crt -n kube-system --dry-run=client -o yaml | kubectl apply -f -
->    kubectl rollout restart ds/containerd-registry-trust -n kube-system
->    ```
-> 2. Force-recreate the Docker Compose containers mounting the certificates so they immediately reload the new files from disk:
->    ```bash
->    docker compose -f docker-compose.dev.yml up -d --force-recreate registry minio web_be recon xet-janitor
->    ```
-
-| Path | Purpose |
-|---|---|
-| `certs/public.crt` | Unified Dev Root CA & Server Certificate (`CA:TRUE` with SANs for `localhost`, `minio`, `registry`, `web_be`, `localip`, `host.docker.internal`, `127.0.0.1`) |
-| `certs/private.key` | Unified private key used by MinIO, Registry, Backend, and Recon |
-| `certs/prod-s3-internal.crt` | IIASA ICT Root CA for internal S3 access |
 
 ### MinIO (block storage, S3)
 
@@ -205,49 +252,12 @@ If so, set the name of your space/project followed by a slash as value.
      ```
    - Paste the output string as the value of `WKUBE_SECRET_JSON_B64` in `.env.web.be`.
 3. Set `USE_HOST_NAMESPACES` to `1` if you use WSL.
-4. Connect your local cluster node container (`desktop-control-plane`) to the Docker Compose network:
-   ```bash
-   docker network connect accelerator_service_default desktop-control-plane
-   ```
-5. Apply the Kubernetes Local Setup Manifest (creates `wkube` namespace, storage classes, and bridges):
-   ```bash
-   kubectl apply -f k8s/manifests/k8s-local-setup.yaml
-   ```
-6. Apply the CA certificates into `wkube` and `kube-system` namespaces:
-   ```bash
-   kubectl create configmap cluster-ca-certs --from-file=accelerator-dev-ca.crt=certs/public.crt --from-file=prod-s3-internal.crt=certs/prod-s3-internal.crt -n wkube --dry-run=client -o yaml | kubectl apply -f -
-   kubectl create configmap cluster-ca-certs --from-file=accelerator-dev-ca.crt=certs/public.crt --from-file=prod-s3-internal.crt=certs/prod-s3-internal.crt -n kube-system --dry-run=client -o yaml | kubectl apply -f -
-   ```
-7. Run the Accelerator CSI Driver locally (for `/mnt/wdrv` support):
-   When jobs require project space access (`/mnt/wdrv`), the `hf.csi.accelerator` driver dynamically mounts project buckets into worker pods using `hf-mount`.
-   - Apply the CSI driver and local DaemonSet:
-     ```bash
-     kubectl apply -f ../hf-csi-driver/deploy/kubernetes/crd.yaml -f ../hf-csi-driver/deploy/kubernetes/serviceaccount.yaml -f ../hf-csi-driver/deploy/kubernetes/rbac.yaml -f k8s/manifests/hf-csi-node.yaml
-     ```
-   - (Optional - Local Build): If developing or modifying `hf-csi-driver`, `hf-mount`, or `wkube_job_agent` code locally instead of using published images:
-     1. Build the images locally from source:
-        ```bash
-        docker build -t ghcr.io/wrufesh/hf-csi-driver:v0.9.2-acc-p11 ../hf-csi-driver
-        docker build -t ghcr.io/wrufesh/hf-mount-fuse:v0.6.5-acc-pr140-p14 ../hf-mount
-        docker build -t registry.iiasa.ac.at/accelerator/wkube-agent-puller:latest ../wkube_job_agent
-        ```
-     2. Import the images into your local cluster node (`desktop-control-plane`):
-        ```bash
-        # Linux / macOS / Git Bash:
-        docker save ghcr.io/wrufesh/hf-csi-driver:v0.9.2-acc-p11 | docker exec -i desktop-control-plane ctr -n k8s.io images import -
-        docker save ghcr.io/wrufesh/hf-mount-fuse:v0.6.5-acc-pr140-p14 | docker exec -i desktop-control-plane ctr -n k8s.io images import -
-        docker save registry.iiasa.ac.at/accelerator/wkube-agent-puller:latest | docker exec -i desktop-control-plane ctr -n k8s.io images import -
-        ```
-        ```powershell
-        # Windows PowerShell (avoiding binary pipeline corruption):
-        cmd.exe /c "docker save ghcr.io/wrufesh/hf-csi-driver:v0.9.2-acc-p11 | docker exec -i desktop-control-plane ctr -n k8s.io images import -"
-        cmd.exe /c "docker save ghcr.io/wrufesh/hf-mount-fuse:v0.6.5-acc-pr140-p14 | docker exec -i desktop-control-plane ctr -n k8s.io images import -"
-        cmd.exe /c "docker save registry.iiasa.ac.at/accelerator/wkube-agent-puller:latest | docker exec -i desktop-control-plane ctr -n k8s.io images import -"
-        ```
-     3. Restart the DaemonSet:
-        ```bash
-        kubectl rollout restart daemonset/hf-csi-node -n kube-system
-        ```
+
+> [!IMPORTANT]
+> Force-recreating ensures the backend containers pick up updated `.env.web.be` settings (Kubeconfig, ports, namespaces):
+> ```bash
+> docker compose -f docker-compose.dev.yml up -d --force-recreate web_be recon xet-janitor scheduler k8s_events
+> ```
 > [!IMPORTANT]
 > Force-recreating ensures the backend containers pick up updated `.env.web.be` settings (Kubeconfig, ports, namespaces):
 > ```bash
