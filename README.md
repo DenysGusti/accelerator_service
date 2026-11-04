@@ -65,6 +65,12 @@ To import the certificate into the Windows Root store (auto-elevates to Administ
 .\scripts\import_certs_certutil.ps1
 ```
 
+> [!IMPORTANT]
+> Whenever certificates are generated or regenerated, force-recreate the containers so they immediately reload the new files from disk:
+> ```bash
+> docker compose -f docker-compose.dev.yml up -d --force-recreate minio web_be recon xet-janitor scheduler k8s_events
+> ```
+
 | Path | Purpose |
 |---|---|
 | `certs/public.crt` | Unified Dev Root CA & Server Certificate (`CA:TRUE` with SANs for `localhost`, `minio`, `web_be`, `localip`, `host.docker.internal`, `127.0.0.1`) |
@@ -234,9 +240,9 @@ If so, set the name of your space/project followed by a slash as value.
         ```bash
         kubectl rollout restart daemonset/hf-csi-node -n kube-system
         ```
-8. Recreate backend services to ensure updated `.env.web.be` settings (Kubeconfig, ports, namespaces) are active:
+8. Recreate backend services to ensure updated `.env.web.be` settings (Kubeconfig, ports, namespaces) and new certificates are active:
    ```bash
-   docker compose -f docker-compose.dev.yml up -d --force-recreate k8s_events scheduler web_be
+   docker compose -f docker-compose.dev.yml up -d --force-recreate minio web_be recon xet-janitor scheduler k8s_events
    ```
 
 ### [TiTiler](https://developmentseed.org/titiler/) (tile server)
