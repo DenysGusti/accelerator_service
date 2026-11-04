@@ -187,8 +187,7 @@ If so, set the name of your space/project followed by a slash as value.
      ```
      Or in PowerShell (copies directly to clipboard):
      ```powershell
-     $json = (kubectl config view --raw -o json) -replace '127\.0\.0\.1', 'host.docker.internal'
-     [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($json)) | Set-Clipboard
+     [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes(((kubectl config view --raw -o json) -replace '127\.0\.0\.1', 'host.docker.internal'))) | Set-Clipboard
      ```
    - Paste the output string as the value of `WKUBE_SECRET_JSON_B64` in `.env.web.be`.
 3. Set `USE_HOST_NAMESPACES` to `1` if you use WSL.
