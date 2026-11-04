@@ -79,6 +79,37 @@ services:
       redis:
         condition: service_started
 
+  #web_be:
+  #  build:
+  #    context: "${PROJECT_FOLDER:?err}"
+  #    dockerfile: dockerfiles/Dockerfile.be
+  #  volumes:
+  #    - "${PROJECT_FOLDER:?err}:/app/"
+  #    - "./certs/public.crt:/usr/local/share/ca-certificates/accelerator-dev-ca.crt:ro"
+  #    - "./certs:/app/certs:ro"
+  #  ports:
+  #    - 8000:8000
+  #    - 20102:20102
+  #    - 5173:5173
+  #  env_file:
+  #    - ./.env.web.be
+  #  stdin_open: true
+  #  tty: true
+  #  networks:
+  #    default:
+  #      aliases:
+  #        - web_be
+  #        - web-be
+  #  depends_on:
+  #    db:
+  #      condition: service_healthy
+  #    minio:
+  #      condition: service_started
+  #    redis:
+  #      condition: service_started
+  #    xet-janitor:
+  #      condition: service_started
+
   web_be:
     build:
       context: "${PROJECT_FOLDER:?err}"
