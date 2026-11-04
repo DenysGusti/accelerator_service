@@ -49,14 +49,15 @@ kubectl rollout restart ds/containerd-registry-trust -n kube-system
 ### 3. Connect Cluster Node to Docker Compose Network
 Connect your local cluster node container (e.g. `desktop-control-plane`) to the Compose network so cluster pods can reach container bridges (create the network first if Compose hasn't run yet):
 
-- **Linux / macOS / WSL (Bash)**:
-  ```bash
-  docker network create accelerator_service_default 2>/dev/null || true
-  ```
-- **Windows (PowerShell)**:
-  ```powershell
-  docker network create accelerator_service_default 2>$null
-  ```
+```bash
+# Linux / macOS / Git Bash:
+docker network create accelerator_service_default 2>/dev/null || true
+```
+
+```powershell
+# Windows PowerShell:
+docker network create accelerator_service_default 2>$null
+```
 
 Then connect the node:
 ```bash
