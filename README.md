@@ -73,32 +73,28 @@ To import the certificate into the Windows Root store (auto-elevates to Administ
 
 ### MinIO (block storage, S3)
 
-1. Generate TLS certificates (if not already done):
-   ```bash
-   openssl req -x509 -newkey rsa:2048 -nodes -keyout certs/private.key -out certs/public.crt -days 1461 -subj "/CN=Accelerator-Dev-Root-CA" -addext "basicConstraints=critical,CA:TRUE" -addext "keyUsage=critical,digitalSignature,keyEncipherment,keyCertSign,cRLSign" -addext "extendedKeyUsage=serverAuth,clientAuth" -addext "subjectAltName=DNS:localhost,DNS:minio,DNS:web_be,DNS:web-be,DNS:localip,DNS:host.docker.internal,IP:127.0.0.1"
-   ```
-2. Start the service:
+1. Start the service:
    ```
    docker compose -f docker-compose.dev.yml up minio [--build]
    ```
    Optionally use the `--build` flag to allow image to be rebuilt if needed. This ensures the containers pick up code
    changes, updated dependencies, and any modifications to the build specification (`Dockerfile`).
-3. Access MinIO container via `docker exec` or GUI.
-4. Register the local instance.
+2. Access MinIO container via `docker exec` or GUI.
+3. Register the local instance.
    ```
    mc alias set local https://localhost:9000 admin adminpassword --insecure
    ```
-5. Create required buckets.
+4. Create required buckets.
    ```
    mc mb local/accelerator --insecure
    mc mb local/jobstore --insecure
    ```
-6. Generate access key and secret key.
+5. Generate access key and secret key.
    ```
    mc admin accesskey create local/ --insecure
    ```
-7. In `.env.web.be`, set these as values of the `*_S3_API_KEY=` and `*_S3_SECRET_KEY=` entries.
-8. Add the MinIO endpoint to your system's known hosts.
+6. In `.env.web.be`, set these as values of the `*_S3_API_KEY=` and `*_S3_SECRET_KEY=` entries.
+7. Add the MinIO endpoint to your system's known hosts.
 
 ### Registry
 
