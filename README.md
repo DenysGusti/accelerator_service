@@ -268,11 +268,6 @@ If so, set the name of your space/project followed by a slash as value.
 > ```bash
 > docker compose -f docker-compose.dev.yml up -d --force-recreate web_be recon xet-janitor scheduler k8s_events
 > ```
-> [!IMPORTANT]
-> Force-recreating ensures the backend containers pick up updated `.env.web.be` settings (Kubeconfig, ports, namespaces):
-> ```bash
-> docker compose -f docker-compose.dev.yml up -d --force-recreate web_be recon xet-janitor scheduler k8s_events
-> ```
 
 ### [TiTiler](https://developmentseed.org/titiler/) (tile server)
 
