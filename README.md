@@ -241,9 +241,11 @@ If so, set the name of your space/project followed by a slash as value.
         kubectl rollout restart daemonset/hf-csi-node -n kube-system
         ```
 8. Recreate backend services to ensure updated `.env.web.be` settings (Kubeconfig, ports, namespaces) and new certificates are active:
-   ```bash
-   docker compose -f docker-compose.dev.yml up -d --force-recreate minio web_be recon xet-janitor scheduler k8s_events
-   ```
+   > [!IMPORTANT]
+   > Force-recreating ensures the containers pick up updated environment variables and reload new TLS certificates into memory from disk:
+   > ```bash
+   > docker compose -f docker-compose.dev.yml up -d --force-recreate minio web_be recon xet-janitor scheduler k8s_events
+   > ```
 
 ### [TiTiler](https://developmentseed.org/titiler/) (tile server)
 
