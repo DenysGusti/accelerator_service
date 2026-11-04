@@ -53,11 +53,11 @@ clone it somewhere convenient, and point `ACCMS_PROJECT_FOLDER` at the resulting
 
 ### TLS Certificates (`certs/`)
 
-All development TLS certificates are unified into a single self-signed **Dev Root CA & Server Certificate** (`certs/public.crt`) with its private key (`certs/private.key`), located directly in the `certs/` directory without subfolders. It acts as both the trust anchor (for clients, containers, and Windows) and the serving certificate for MinIO, Backend, and Recon.
+All development TLS certificates are unified into a single self-signed **Dev Root CA & Server Certificate** (`certs/public.crt`) with its private key (`certs/private.key`), located directly in the `certs/` directory without subfolders. It acts as both the trust anchor (for clients, containers, and Windows) and the serving certificate for MinIO, Docker Registry, Backend, and Recon.
 
 To generate/regenerate certificates:
 ```bash
-openssl req -x509 -newkey rsa:2048 -nodes -keyout certs/private.key -out certs/public.crt -days 1461 -subj "/CN=Accelerator-Dev-Root-CA" -addext "basicConstraints=critical,CA:TRUE" -addext "keyUsage=critical,digitalSignature,keyEncipherment,keyCertSign,cRLSign" -addext "extendedKeyUsage=serverAuth,clientAuth" -addext "subjectAltName=DNS:localhost,DNS:minio,DNS:web_be,DNS:web-be,DNS:localip,DNS:host.docker.internal,IP:127.0.0.1"
+openssl req -x509 -newkey rsa:2048 -nodes -keyout certs/private.key -out certs/public.crt -days 1461 -subj "/CN=Accelerator-Dev-Root-CA" -addext "basicConstraints=critical,CA:TRUE" -addext "keyUsage=critical,digitalSignature,keyEncipherment,keyCertSign,cRLSign" -addext "extendedKeyUsage=serverAuth,clientAuth" -addext "subjectAltName=DNS:localhost,DNS:minio,DNS:web_be,DNS:web-be,DNS:localip,DNS:host.docker.internal,DNS:registry,IP:127.0.0.1"
 ```
 
 To import the certificate into the Windows Root store (auto-elevates to Administrator if needed and removes old outdated certificates):
@@ -66,15 +66,21 @@ To import the certificate into the Windows Root store (auto-elevates to Administ
 ```
 
 > [!IMPORTANT]
-> Whenever certificates are generated or regenerated, force-recreate the containers so they immediately reload the new files from disk:
-> ```bash
-> docker compose -f docker-compose.dev.yml up -d --force-recreate minio web_be recon xet-janitor scheduler k8s_events
-> ```
+> Whenever certificates are generated or regenerated:
+> 1. Update the cluster ConfigMap and restart the containerd trust daemonset:
+>    ```bash
+>    kubectl create configmap cluster-ca-certs --from-file=accelerator-dev-ca.crt=certs/public.crt -n kube-system --dry-run=client -o yaml | kubectl apply -f -
+>    kubectl rollout restart ds/containerd-registry-trust -n kube-system
+>    ```
+> 2. Force-recreate the Docker Compose containers so they immediately reload the new files from disk:
+>    ```bash
+>    docker compose -f docker-compose.dev.yml up -d --force-recreate registry minio web_be recon xet-janitor scheduler k8s_events
+>    ```
 
 | Path | Purpose |
 |---|---|
-| `certs/public.crt` | Unified Dev Root CA & Server Certificate (`CA:TRUE` with SANs for `localhost`, `minio`, `web_be`, `localip`, `host.docker.internal`, `127.0.0.1`) |
-| `certs/private.key` | Unified private key used by MinIO, Backend, and Recon |
+| `certs/public.crt` | Unified Dev Root CA & Server Certificate (`CA:TRUE` with SANs for `localhost`, `minio`, `registry`, `web_be`, `localip`, `host.docker.internal`, `127.0.0.1`) |
+| `certs/private.key` | Unified private key used by MinIO, Registry, Backend, and Recon |
 | `certs/prod-s3-internal.crt` | IIASA ICT Root CA for internal S3 access |
 
 ### MinIO (block storage, S3)
@@ -103,6 +109,8 @@ To import the certificate into the Windows Root store (auto-elevates to Administ
 7. Add the MinIO endpoint to your system's known hosts.
 
 ### Registry
+
+The local Docker registry runs with TLS enabled on port `8443` using the unified certificates from `certs/` (`certs/public.crt` and `certs/private.key`). The Kubernetes node trusts this certificate via the `containerd-registry-trust` daemonset configured in `k8s/manifests/k8s-local-setup.yaml`.
 
 Generate `htpasswd` file:
 
