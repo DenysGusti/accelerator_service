@@ -264,9 +264,9 @@ If so, set the name of your space/project followed by a slash as value.
 3. Set `USE_HOST_NAMESPACES` to `1` if you use WSL.
 
 > [!IMPORTANT]
-> Force-recreating ensures the backend containers pick up updated `.env.web.be` settings (Kubeconfig, ports, namespaces):
+> Force-recreating ensures the containers pick up updated `.env.web.be` settings (Kubeconfig, ports, namespaces) and reload certificates mounted from `certs/`:
 > ```bash
-> docker compose -f docker-compose.dev.yml up -d --force-recreate web_be recon xet-janitor scheduler k8s_events
+> docker compose -f docker-compose.dev.yml up -d --force-recreate registry minio web_be recon xet-janitor scheduler k8s_events
 > ```
 
 ### [TiTiler](https://developmentseed.org/titiler/) (tile server)
