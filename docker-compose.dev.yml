@@ -79,66 +79,22 @@ services:
       redis:
         condition: service_started
 
-  #web_be:
-  #  build:
-  #    context: "${PROJECT_FOLDER:?err}"
-  #    dockerfile: dockerfiles/Dockerfile.be
-  #  volumes:
-  #    - "${PROJECT_FOLDER:?err}:/app/"
-  #    - "./certs/public.crt:/usr/local/share/ca-certificates/accelerator-dev-ca.crt:ro"
-  #    - "./certs:/app/certs:ro"
-  #  ports:
-  #    - 8000:8000
-  #    - 20102:20102
-  #    - 5173:5173
-  #  env_file:
-  #    - ./.env.web.be
-  #  stdin_open: true
-  #  tty: true
-  #  networks:
-  #    default:
-  #      aliases:
-  #        - web_be
-  #        - web-be
-  #  depends_on:
-  #    db:
-  #      condition: service_healthy
-  #    minio:
-  #      condition: service_started
-  #    redis:
-  #      condition: service_started
-  #    xet-janitor:
-  #      condition: service_started
-
   web_be:
     build:
       context: "${PROJECT_FOLDER:?err}"
-      dockerfile: dockerfiles/Dockerfile.devc
+      dockerfile: dockerfiles/Dockerfile.be
     volumes:
       - "${PROJECT_FOLDER:?err}:/app/"
       - "./certs/public.crt:/usr/local/share/ca-certificates/accelerator-dev-ca.crt:ro"
       - "./certs:/app/certs:ro"
-      - "./certs/prod-s3-internal.crt:/usr/local/share/ca-certificates/prod-s3-internal.crt:ro"
-      - ../../xet-core:/app/xet-core
-      - ../xet_shard_parser:/app/xet_shard_parser
-      - ../../hf-mount:/app/hf-mount
-      - ../../hf-csi-driver:/app/hf-csi-driver
-      - ${ACCLI_PROJECT_FOLDER:?err}:/app/accli
-      - ${WKUBE_JOB_AGENT_PROJECT_FOLDER:?err}:/app/wkube_job_agent
-      - ${WKUBE_JOB_GATEWAY_INTERACTIVE_PROJECT_FOLDER:?err}:/app/wkube_job_gateway_interactive
-
     ports:
       - 8000:8000
       - 20102:20102
-      - 8081:8081
-      - 8080:8080
       - 5173:5173
     env_file:
       - ./.env.web.be
-      - ./.env.web.fe
     stdin_open: true
     tty: true
-    privileged: true
     networks:
       default:
         aliases:
@@ -153,6 +109,50 @@ services:
         condition: service_started
       xet-janitor:
         condition: service_started
+
+#  web_be:
+#    build:
+#      context: "${PROJECT_FOLDER:?err}"
+#      dockerfile: dockerfiles/Dockerfile.devc
+#    volumes:
+#      - "${PROJECT_FOLDER:?err}:/app/"
+#      - "./certs/public.crt:/usr/local/share/ca-certificates/accelerator-dev-ca.crt:ro"
+#      - "./certs:/app/certs:ro"
+#      - "./certs/prod-s3-internal.crt:/usr/local/share/ca-certificates/prod-s3-internal.crt:ro"
+#      - ../../xet-core:/app/xet-core
+#      - ../xet_shard_parser:/app/xet_shard_parser
+#      - ../../hf-mount:/app/hf-mount
+#      - ../../hf-csi-driver:/app/hf-csi-driver
+#      - ${ACCLI_PROJECT_FOLDER:?err}:/app/accli
+#      - ${WKUBE_JOB_AGENT_PROJECT_FOLDER:?err}:/app/wkube_job_agent
+#      - ${WKUBE_JOB_GATEWAY_INTERACTIVE_PROJECT_FOLDER:?err}:/app/wkube_job_gateway_interactive
+#
+#    ports:
+#      - 8000:8000
+#      - 20102:20102
+#      - 8081:8081
+#      - 8080:8080
+#      - 5173:5173
+#    env_file:
+#      - ./.env.web.be
+#      - ./.env.web.fe
+#    stdin_open: true
+#    tty: true
+#    privileged: true
+#    networks:
+#      default:
+#        aliases:
+#          - web_be
+#          - web-be
+#    depends_on:
+#      db:
+#        condition: service_healthy
+#      minio:
+#        condition: service_started
+#      redis:
+#        condition: service_started
+#      xet-janitor:
+#        condition: service_started
 
   recon:
     build:
@@ -227,17 +227,17 @@ services:
       web_be:
         condition: service_started
 
-  titiler:
-    build:
-      context: "${TITILER_FOLDER:?err}"
-      dockerfile: Dockerfile.dev
-    platform: linux/x86_64
-    ports:
-      - 8002:8000
-    volumes:
-      - "${TITILER_FOLDER:?err}:/app/"
-    environment:
-      - TITILER_API_CORS_ORIGINS=https://localhost:8080,http://localhost:8080,https://accelerator.iiasa.ac.at,https://141-iiasa-forestnavigator.vercel.app
+#  titiler:
+#    build:
+#      context: "${TITILER_FOLDER:?err}"
+#      dockerfile: Dockerfile.dev
+#    platform: linux/x86_64
+#    ports:
+#      - 8002:8000
+#    volumes:
+#      - "${TITILER_FOLDER:?err}:/app/"
+#    environment:
+#      - TITILER_API_CORS_ORIGINS=https://localhost:8080,http://localhost:8080,https://accelerator.iiasa.ac.at,https://141-iiasa-forestnavigator.vercel.app
 
   # accms:
   #   build:

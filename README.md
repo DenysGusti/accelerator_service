@@ -72,9 +72,9 @@ To import the certificate into the Windows Root store (auto-elevates to Administ
 >    kubectl create configmap cluster-ca-certs --from-file=accelerator-dev-ca.crt=certs/public.crt -n kube-system --dry-run=client -o yaml | kubectl apply -f -
 >    kubectl rollout restart ds/containerd-registry-trust -n kube-system
 >    ```
-> 2. Force-recreate the Docker Compose containers so they immediately reload the new files from disk:
+> 2. Force-recreate the Docker Compose containers mounting the certificates so they immediately reload the new files from disk:
 >    ```bash
->    docker compose -f docker-compose.dev.yml up -d --force-recreate registry minio web_be recon xet-janitor scheduler k8s_events
+>    docker compose -f docker-compose.dev.yml up -d --force-recreate registry minio web_be recon xet-janitor
 >    ```
 
 | Path | Purpose |
