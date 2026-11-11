@@ -75,20 +75,20 @@ When jobs require project space access (`/mnt/wdrv`), the `hf.csi.accelerator` d
   1. Build the images locally from source:
      ```bash
      docker build -t ghcr.io/wrufesh/hf-csi-driver:v0.9.2-acc-p11 ../hf-csi-driver
-     docker build -t ghcr.io/wrufesh/hf-mount-fuse:v0.6.5-acc-pr140-p14 ../hf-mount
+     docker build -t ghcr.io/wrufesh/hf-mount-fuse:v0.6.5-acc-pr140-p15 ../hf-mount
      docker build -t registry.iiasa.ac.at/accelerator/wkube-agent-puller:latest ../wkube_job_agent
      ```
   2. Import the images into your local cluster node (`desktop-control-plane`):
      ```bash
      # Linux / macOS / Git Bash:
      docker save ghcr.io/wrufesh/hf-csi-driver:v0.9.2-acc-p11 | docker exec -i desktop-control-plane ctr -n k8s.io images import -
-     docker save ghcr.io/wrufesh/hf-mount-fuse:v0.6.5-acc-pr140-p14 | docker exec -i desktop-control-plane ctr -n k8s.io images import -
+     docker save ghcr.io/wrufesh/hf-mount-fuse:v0.6.5-acc-pr140-p15 | docker exec -i desktop-control-plane ctr -n k8s.io images import -
      docker save registry.iiasa.ac.at/accelerator/wkube-agent-puller:latest | docker exec -i desktop-control-plane ctr -n k8s.io images import -
      ```
      ```powershell
      # Windows PowerShell (avoiding binary pipeline corruption):
      cmd.exe /c "docker save ghcr.io/wrufesh/hf-csi-driver:v0.9.2-acc-p11 | docker exec -i desktop-control-plane ctr -n k8s.io images import -"
-     cmd.exe /c "docker save ghcr.io/wrufesh/hf-mount-fuse:v0.6.5-acc-pr140-p14 | docker exec -i desktop-control-plane ctr -n k8s.io images import -"
+     cmd.exe /c "docker save ghcr.io/wrufesh/hf-mount-fuse:v0.6.5-acc-pr140-p15 | docker exec -i desktop-control-plane ctr -n k8s.io images import -"
      cmd.exe /c "docker save registry.iiasa.ac.at/accelerator/wkube-agent-puller:latest | docker exec -i desktop-control-plane ctr -n k8s.io images import -"
      ```
   3. Restart the DaemonSet and Webhook:
