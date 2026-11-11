@@ -67,9 +67,9 @@ docker network connect accelerator_service_default desktop-control-plane
 ### 4. Setup Accelerator CSI Driver (for `/mnt/wdrv` support)
 When jobs require project space access (`/mnt/wdrv`), the `hf.csi.accelerator` driver dynamically mounts project buckets into worker pods using `hf-mount`.
 
-- Apply the CSI driver and local DaemonSet:
+- Install or upgrade the CSI driver using Helm with development values:
   ```bash
-  kubectl apply -f ../hf-csi-driver/deploy/kubernetes/crd.yaml -f ../hf-csi-driver/deploy/kubernetes/serviceaccount.yaml -f ../hf-csi-driver/deploy/kubernetes/rbac.yaml -f k8s/manifests/hf-csi-node.yaml
+  helm upgrade --install hf-csi ../hf-csi-driver/deploy/helm/hf-csi-driver/ -n kube-system -f ../control_services_backend/scheduler/acc-values-dev.yaml --set image.pullPolicy=IfNotPresent,hfMount.image.pullPolicy=IfNotPresent --set "extraEnv[1].value=https://host.docker.internal:8000/api/xet-cas,extraEnv[2].value=https://host.docker.internal:8000,webhook.extraEnv[1].value=https://host.docker.internal:8000/api/xet-cas,webhook.extraEnv[2].value=https://host.docker.internal:8000"
   ```
 - *(Optional - Local Build)*: If developing or modifying `hf-csi-driver`, `hf-mount`, or `wkube_job_agent` code locally instead of using published images:
   1. Build the images locally from source:
@@ -91,9 +91,9 @@ When jobs require project space access (`/mnt/wdrv`), the `hf.csi.accelerator` d
      cmd.exe /c "docker save ghcr.io/wrufesh/hf-mount-fuse:v0.6.5-acc-pr140-p14 | docker exec -i desktop-control-plane ctr -n k8s.io images import -"
      cmd.exe /c "docker save registry.iiasa.ac.at/accelerator/wkube-agent-puller:latest | docker exec -i desktop-control-plane ctr -n k8s.io images import -"
      ```
-  3. Restart the DaemonSet:
+  3. Restart the DaemonSet and Webhook:
      ```bash
-     kubectl rollout restart daemonset/hf-csi-node -n kube-system
+     kubectl rollout restart daemonset,deployment -l app.kubernetes.io/name=hf-csi-driver -n kube-system
      ```
 
 ## Step 3: Docker Services
