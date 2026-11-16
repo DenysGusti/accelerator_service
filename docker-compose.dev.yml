@@ -39,7 +39,7 @@ services:
       - 9001:9001
     volumes:
       - minio_data:/data
-      - "${MINIO_DEV_CERT_LOCATION:?err}:/home/nonroot/.minio/certs"
+      - "./certs:/home/nonroot/.minio/certs"
     command: server /data --console-address ":9001" --certs-dir /home/nonroot/.minio/certs
     env_file:
       - ./.env.minio
@@ -63,8 +63,9 @@ services:
       dockerfile: dockerfiles/Dockerfile.devc
     volumes:
       - "${PROJECT_FOLDER:?err}:/app/"
-      - "${PROJECT_FOLDER:?err}/certs/ca.crt:/usr/local/share/ca-certificates/backend.crt:ro"
-      - "${MINIO_DEV_CERT_LOCATION:?err}/ca.crt:/usr/local/share/ca-certificates/minio.crt:ro"
+      - "./certs/public.crt:/usr/local/share/ca-certificates/accelerator-dev-ca.crt:ro"
+      - "./certs:/app/certs:ro"
+      - "./certs/prod-s3-internal.crt:/usr/local/share/ca-certificates/prod-s3-internal.crt:ro"
     env_file:
       - ./.env.web.be
     stdin_open: true
@@ -84,8 +85,8 @@ services:
   #    dockerfile: dockerfiles/Dockerfile.be
   #  volumes:
   #    - "${PROJECT_FOLDER:?err}:/app/"
-  #    - "${PROJECT_FOLDER:?err}/certs/ca.crt:/usr/local/share/ca-certificates/backend.crt:ro"
-  #    - "${MINIO_DEV_CERT_LOCATION:?err}/ca.crt:/usr/local/share/ca-certificates/minio.crt:ro"
+  #    - "./certs/public.crt:/usr/local/share/ca-certificates/accelerator-dev-ca.crt:ro"
+  #    - "./certs:/app/certs:ro"
   #  ports:
   #    - 8000:8000
   #    - 20102:20102
@@ -94,6 +95,11 @@ services:
   #    - ./.env.web.be
   #  stdin_open: true
   #  tty: true
+  #  networks:
+  #    default:
+  #      aliases:
+  #        - web_be
+  #        - web-be
   #  depends_on:
   #    db:
   #      condition: service_healthy
@@ -110,13 +116,14 @@ services:
       dockerfile: dockerfiles/Dockerfile.devc
     volumes:
       - "${PROJECT_FOLDER:?err}:/app/"
-      - "${PROJECT_FOLDER:?err}/certs/ca.crt:/usr/local/share/ca-certificates/backend.crt:ro"
-      - "${MINIO_DEV_CERT_LOCATION:?err}/ca.crt:/usr/local/share/ca-certificates/minio.crt:ro"
+      - "./certs/public.crt:/usr/local/share/ca-certificates/accelerator-dev-ca.crt:ro"
+      - "./certs:/app/certs:ro"
+      - "./certs/prod-s3-internal.crt:/usr/local/share/ca-certificates/prod-s3-internal.crt:ro"
       - ../../xet-core:/app/xet-core
       - ../xet_shard_parser:/app/xet_shard_parser
       - ../../hf-mount:/app/hf-mount
       - ../../hf-csi-driver:/app/hf-csi-driver
-      - ${ACLI_PROJECT_FOLDER:?err}:/app/accli
+      - ${ACCLI_PROJECT_FOLDER:?err}:/app/accli
       - ${WKUBE_JOB_AGENT_PROJECT_FOLDER:?err}:/app/wkube_job_agent
       - ${WKUBE_JOB_GATEWAY_INTERACTIVE_PROJECT_FOLDER:?err}:/app/wkube_job_gateway_interactive
 
@@ -132,6 +139,11 @@ services:
     stdin_open: true
     tty: true
     privileged: true
+    networks:
+      default:
+        aliases:
+          - web_be
+          - web-be
     depends_on:
       db:
         condition: service_healthy
@@ -148,6 +160,9 @@ services:
       dockerfile: dockerfiles/Dockerfile.recon.dev
     volumes:
       - "${PROJECT_FOLDER:?err}:/app/"
+      - "./certs/public.crt:/usr/local/share/ca-certificates/accelerator-dev-ca.crt:ro"
+      - "./certs:/app/certs:ro"
+      - "./certs/prod-s3-internal.crt:/usr/local/share/ca-certificates/prod-s3-internal.crt:ro"
     ports:
       - 8900:8900
     env_file:
@@ -173,14 +188,14 @@ services:
       REGISTRY_AUTH_HTPASSWD_REALM: Registry Realm
       REGISTRY_AUTH_HTPASSWD_PATH: /auth/htpasswd
       REGISTRY_HTTP_ADDR: registry:8443
-      REGISTRY_HTTP_TLS_CERTIFICATE: /certs/server.crt
-      REGISTRY_HTTP_TLS_KEY: /certs/server.key
+      REGISTRY_HTTP_TLS_CERTIFICATE: /certs/public.crt
+      REGISTRY_HTTP_TLS_KEY: /certs/private.key
     # Way to generate htpasswd file
     # docker run --rm --entrypoint htpasswd httpd:2 -Bbn myregistry myregistrypassword > services_docker_compose_for_dev/registry_auth/htpasswd
     volumes:
       - registry_data:/var/lib/registry
       - ./registry_auth:/auth
-      - ./registry_certs:/certs
+      - ./certs:/certs:ro
 
   scheduler:
     build:
@@ -223,15 +238,6 @@ services:
       - "${TITILER_FOLDER:?err}:/app/"
     environment:
       - TITILER_API_CORS_ORIGINS=https://localhost:8080,http://localhost:8080,https://accelerator.iiasa.ac.at,https://141-iiasa-forestnavigator.vercel.app
-
-  acli:
-    build:
-      context: "${ACLI_PROJECT_FOLDER:?err}"
-      dockerfile: Dockerfile.dev
-    command: sleep infinity
-    privileged: true
-    volumes:
-      - "${ACLI_PROJECT_FOLDER:?err}:/app/"
 
   # accms:
   #   build:
