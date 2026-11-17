@@ -17,6 +17,15 @@ spec:
       requests:
         memory: "2000Mi"
         cpu: "2000m"
+    volumeMounts:
+      - name: cluster-ca-certs
+        mountPath: /usr/local/share/ca-certificates
+        readOnly: true
+  volumes:
+    - name: cluster-ca-certs
+      configMap:
+        name: cluster-ca-certs
+        optional: true
 
   imagePullSecrets:
     - name: iiasaregcred

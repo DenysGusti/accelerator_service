@@ -31,15 +31,22 @@ spec:
             memory: "2048Mi"
             cpu: "2000m"
 
-        # volumeMounts:
-        #     - name: accms-media-pv
-        #       mountPath: /app/media
+        volumeMounts:
+          - name: cluster-ca-certs
+            mountPath: /usr/local/share/ca-certificates
+            readOnly: true
+          # - name: accms-media-pv
+          #   mountPath: /app/media
       imagePullSecrets:
         - name: iiasaregcred
-      # volumes:
-      #   - name: accms-media-pv
-      #     persistentVolumeClaim:
-      #       claimName: accms-pvc
+      volumes:
+        - name: cluster-ca-certs
+          configMap:
+            name: cluster-ca-certs
+            optional: true
+        # - name: accms-media-pv
+        #   persistentVolumeClaim:
+        #     claimName: accms-pvc
 ---
 apiVersion: v1
 kind: Service
