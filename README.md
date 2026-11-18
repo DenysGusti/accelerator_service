@@ -46,6 +46,14 @@ kubectl create configmap cluster-ca-certs --from-file=accelerator-dev-ca.crt=cer
 kubectl rollout restart ds/containerd-registry-trust -n kube-system
 ```
 
+> [!NOTE]
+> **Production Cluster Provisioning:** On a production Kubernetes cluster (where services are deployed via `k8s/manifests/` into `default` rather than Docker Compose), only `certs/prod-s3-internal.crt` is required:
+> ```bash
+> kubectl create configmap cluster-ca-certs --from-file=prod-s3-internal.crt=certs/prod-s3-internal.crt -n default --dry-run=client -o yaml | kubectl apply -f -
+> kubectl create configmap cluster-ca-certs --from-file=prod-s3-internal.crt=certs/prod-s3-internal.crt -n wkube --dry-run=client -o yaml | kubectl apply -f -
+> kubectl create configmap cluster-ca-certs --from-file=prod-s3-internal.crt=certs/prod-s3-internal.crt -n kube-system --dry-run=client -o yaml | kubectl apply -f -
+> ```
+
 ### 3. Connect Cluster Node to Docker Compose Network
 Connect your local cluster node container (e.g. `desktop-control-plane`) to the Compose network so cluster pods can reach container bridges (create the network first if Compose hasn't run yet):
 
