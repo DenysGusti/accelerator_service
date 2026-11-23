@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: accelerator-scheduler
-        image: registry.iiasa.ac.at/accelerator/scheduler:2159644f
+        image: registry.iiasa.ac.at/accelerator/scheduler:a6ba8f1c
         command: ["/home/ubuntu/.local/bin/celery"]
         args:
           - "-A"

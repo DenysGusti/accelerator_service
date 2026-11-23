@@ -1,9 +1,24 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: wkube-it-gateway-acme
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 1Gi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: wkube-it-gateway
 spec:
   replicas: 1
+  # The ACME volume is ReadWriteOnce: stop the old pod before starting the new one.
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: wkube-it-gateway
@@ -24,20 +39,23 @@ spec:
           secret:
             secretName: wkube-tunnel-gateway-keys
             defaultMode: 0400
-      
+        - name: acme
+          persistentVolumeClaim:
+            claimName: wkube-it-gateway-acme
+
       containers:
         - name: wkube-it-gateway
-          image: registry.iiasa.ac.at/accelerator/wkube-it-gateway:c03e62d
+          image: registry.iiasa.ac.at/accelerator/wkube-it-gateway:d2d1711
           imagePullPolicy: Always
-          # env:
-          #   - name: PUBLIC_KEY
-          #     valueFrom:
-          #       secretKeyRef:
-          #         name: wkube-it-gateway-ssh-keys
-          #         key: id_ed25519.pub
-          #   - name: PASSWORD_ACCESS
-          #     value: "false"
-          
+          envFrom:
+          - secretRef:
+              name: wkube-it-gateway
+          env:
+            # Let's Encrypt certificates for custom domains (autocert). Must be persistent.
+            - name: ACME_CACHE_DIR
+              value: /var/lib/wkube-acme
+            - name: TRUSTED_PROXY_CIDRS
+              value: 10.42.0.0/16
           volumeMounts:
             - name: tls-certs
               mountPath: "/etc/ssl/certs"
@@ -45,12 +63,13 @@ spec:
             - name: tunnel-keys
               mountPath: "/etc/wkube-tunnel"
               readOnly: true
-            
-          
+            - name: acme
+              mountPath: "/var/lib/wkube-acme"
+
           ports:
           - containerPort: 6473
           - containerPort: 2222
-          resources:  
+          resources:
             limits:
               memory: "2048Mi"
               cpu: "2000m"

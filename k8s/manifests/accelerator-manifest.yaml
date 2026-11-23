@@ -13,15 +13,18 @@ spec:
       labels:
         app: accelerator-be
       annotations:
-        kubernetes.io/restart-at: "2025-11-03T12:01:43+00:00"
+        kubernetes.io/restart-at: "2025-11-08T12:01:43+00:00"
     spec:
       containers:
       - name: acc-be
         # image: registry.iiasa.ac.at/accelerator/iiasa-acc-be:a1837404
-        image: registry.iiasa.ac.at/accelerator/iiasa-acc-be:0d68bb14
+        image: registry.iiasa.ac.at/accelerator/iiasa-acc-be:d5e551de
         envFrom:
           - secretRef:
               name: accelerator-be-secret
+        env:
+          - name: XET_GC_ID
+            value: "d5e551de"
         imagePullPolicy: Always
         ports:
         - containerPort: 8000
