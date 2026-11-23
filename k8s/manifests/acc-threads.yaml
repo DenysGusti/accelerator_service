@@ -15,23 +15,31 @@ spec:
         kubernetes.io/restart-at: "2025-02-22T10:50:00+0200"
     spec:
       containers:
-      - name: acc-be
-        image: registry.iiasa.ac.at/accelerator/acc-threads:0291365
-        envFrom:
-          - secretRef:
-              name: acc-threads-secrets
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 8000
-        resources:
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
-          requests:
-            memory: "512Mi"
-            cpu: "500m"
-      
-      
+        - name: acc-be
+          image: registry.iiasa.ac.at/accelerator/acc-threads:b4258af
+          envFrom:
+            - secretRef:
+                name: acc-threads-secrets
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          resources:
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+          volumeMounts:
+            - name: cluster-ca-certs
+              mountPath: /usr/local/share/ca-certificates
+              readOnly: true
+      volumes:
+        - name: cluster-ca-certs
+          configMap:
+            name: cluster-ca-certs
+            optional: true
+
       imagePullSecrets:
         - name: iiasaregcred
 ---

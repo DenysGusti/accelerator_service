@@ -44,8 +44,15 @@ spec:
             memory: "4095Mi"
             cpu: "4000m"
             ephemeral-storage: "12Gi"
-      
-      
+        volumeMounts:
+          - name: cluster-ca-certs
+            mountPath: /usr/local/share/ca-certificates
+            readOnly: true
+      volumes:
+        - name: cluster-ca-certs
+          configMap:
+            name: cluster-ca-certs
+            optional: true
       imagePullSecrets:
         - name: iiasaregcred
 ---
