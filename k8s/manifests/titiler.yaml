@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: titiler
-        image: registry.iiasa.ac.at/accelerator/titiler:e9c6aae
+        image: registry.iiasa.ac.at/accelerator/titiler:233a46e
         envFrom:
           - secretRef:
               name: titiler-secret
