@@ -229,6 +229,37 @@ base64 -w0 private_key.pem
 base64 -w0 public_key.pem
 ```
 
+6. Generate the SSH tunnel keypairs for interactive jobs (or leave both variables empty if not using interactive tunnels):
+
+```bash
+ssh-keygen -t ed25519 -N '' -C wkube-tunnel-ca -f tunnel_ca
+ssh-keygen -t ed25519 -N '' -C wkube-tunnel-gateway -f gateway_host
+```
+
+Set `TUNNEL_GATEWAY_SSH_HOST_PUBLIC_KEY` to the contents of `gateway_host.pub`, and set `TUNNEL_SSH_CA_PRIVATE_KEY_BASE64` to the base64-encoded `tunnel_ca`:
+
+```bash
+# Linux / WSL / Git Bash
+base64 -w0 tunnel_ca
+```
+```powershell
+# Windows PowerShell (copies directly to clipboard)
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("tunnel_ca")) | Set-Clipboard
+```
+
+7. Set `SERVICE_TOKEN_PEPPER` to a random 256-bit (32-byte) base64 string (at least 32 characters, used to hash `/v1/service/` tokens):
+
+```bash
+# Linux / WSL / Git Bash
+head </dev/random -c32 | base64
+```
+```powershell
+# Windows PowerShell (copies directly to clipboard)
+$b = [byte[]]::new(32); [Security.Cryptography.RandomNumberGenerator]::Fill($b); [Convert]::ToBase64String($b) | Set-Clipboard
+```
+
+8. Set `SERVICE_API_HOSTS` to a comma-separated list of hostnames (without port) allowed to call `/v1/service/`, or leave empty to allow any `Host` header.
+
 ### `.env.web.be` (job dispatcher)
 
 Never wrap values in quotes in a Docker `.env` file unless your application explicitly expects those quotation marks to
@@ -242,22 +273,7 @@ If so, set the name of your space/project followed by a slash as value.
 - When the registry service is running, you should be able to log in via  `docker login <registry>:8443` and the
   configured username and password.
 
-1. Set `ACCELERATOR_APP_TOKEN` by obtaining a token as follows:
-    - Startup the backend service:  
-      `docker compose up web_be`
-        - This also starts the integrated frontend.
-    - Create an account for yourself by signing in to the front end at `https://localhost:8080/` or
-      `https://localhost:8000/`.
-        - Press the "Login with IIASA" button.
-    - With `docker ps`, determine the container ID of the backend and shell into the container:  
-      `docker ps | grep web_be`  
-      `docker exec -it <backend container ID> /bin/bash`
-    - Grant your account superuser rights:  
-      `python apply.py add_role <your email> APP__SUPERUSER`
-    - Obtain an access token with superuser rights:  
-      `python apply.py get_access_token <your email> <seconds to expiry>`
-    - Copy and paste the token as the value of `ACCELERATOR_APP_TOKEN`.
-2. Convert your Kubernetes config into a base64 string for `WKUBE_SECRET_JSON_B64`:
+1. Convert your Kubernetes config into a base64 string for `WKUBE_SECRET_JSON_B64`:
    - If using Docker Desktop / WSL, the server endpoint in the kubeconfig should point to `https://host.docker.internal:<port>` (the port can be found with `kubectl cluster-info`).
    - You can generate the UTF-8 encoded base64 value in one step:
      ```bash
@@ -269,7 +285,7 @@ If so, set the name of your space/project followed by a slash as value.
      [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes(((kubectl config view --raw -o json) -replace '127\.0\.0\.1', 'host.docker.internal'))) | Set-Clipboard
      ```
    - Paste the output string as the value of `WKUBE_SECRET_JSON_B64` in `.env.web.be`.
-3. Set `USE_HOST_NAMESPACES` to `1` if you use WSL.
+2. Set `USE_HOST_NAMESPACES` to `1` if you use WSL.
 
 > [!IMPORTANT]
 > Force-recreating ensures the containers pick up updated `.env.web.be` settings (Kubeconfig, ports, namespaces) and reload certificates mounted from `certs/`:
@@ -328,3 +344,8 @@ certificate, add an exception in your browser.
 
 Browse to the frontend at `https://localhost:8080/` or `https://localhost:8000/`. In case of a security warning on
 account of the self-signed certificate, add an exception in your browser. Then log in via the `Login with IIASA` button.
+
+To grant your account superuser rights after logging in:
+```bash
+docker compose -f docker-compose.dev.yml exec web_be python apply.py add_role <your email> APP__SUPERUSER
+```
