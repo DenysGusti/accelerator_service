@@ -116,6 +116,7 @@ services:
   #    - "${PROJECT_FOLDER:?err}:/app/"
   #    - "./certs/public.crt:/usr/local/share/ca-certificates/accelerator-dev-ca.crt:ro"
   #    - "./certs:/app/certs:ro"
+  #    - "./certs/prod-s3-internal.crt:/usr/local/share/ca-certificates/prod-s3-internal.crt:ro"
   #  ports:
   #    - 8000:8000
   #    - 20102:20102
